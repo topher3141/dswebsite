@@ -1,13 +1,12 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
 const LOYALTY_URL = "https://app.squareup.com/loyalty/ML6ZZS746Y0MJ";
 const MAP_URL = "https://www.google.com/maps/search/?api=1&query=510%20McCormick%20Drive%20Suite%20B%20Glen%20Burnie%20MD%2021061";
 const LOGO_URL = "https://i.imgur.com/euamaJ6.png";
+const STOREFRONT_GRAPHIC_URL = "https://i.imgur.com/1M5YhOV.jpeg";
 
-function CountUp({ end, duration = 2600, suffix = "", start = false }: { end: number; duration?: number; suffix?: string; start?: boolean }) {
+function CountUp({ end, duration = 2600, suffix = "", start = false }) {
   const [value, setValue] = useState(0);
 
   useEffect(() => {
@@ -16,10 +15,10 @@ function CountUp({ end, duration = 2600, suffix = "", start = false }: { end: nu
       return undefined;
     }
 
-    let frameId: number;
+    let frameId;
     const startTime = performance.now();
 
-    const update = (currentTime: number) => {
+    const update = (currentTime) => {
       const progress = Math.min((currentTime - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(end * eased));
@@ -42,7 +41,7 @@ function CountUp({ end, duration = 2600, suffix = "", start = false }: { end: nu
 }
 
 function useRevealCountUp() {
-  const [ref, setRef] = useState<HTMLElement | null>(null);
+  const [ref, setRef] = useState(null);
   const [isRevealed, setIsRevealed] = useState(false);
 
   useEffect(() => {
@@ -65,7 +64,7 @@ function useRevealCountUp() {
   return { setRef, isRevealed };
 }
 
-function Icon({ name, className = "" }: { name: string; className?: string }) {
+function Icon({ name, className = "" }) {
   const common = `h-6 w-6 ${className}`;
 
   if (name === "facebook") {
@@ -150,7 +149,7 @@ const REASONS = [
   },
 ];
 
-function validateContent(hours: typeof HOURS, reasons: typeof REASONS, ribbon: typeof TOP_RIBBON) {
+function validateContent(hours, reasons, ribbon) {
   return Boolean(
     Array.isArray(hours) &&
       hours.length === 3 &&
@@ -175,9 +174,12 @@ console.assert(FACEBOOK_GROUP_URL.includes("facebook.com"), "facebook group link
 console.assert(LOYALTY_URL.includes("squareup.com"), "loyalty link configured");
 console.assert(MAP_URL.includes("google.com"), "map link configured");
 console.assert(LOGO_URL.includes("imgur.com"), "wide logo configured");
+console.assert(STOREFRONT_GRAPHIC_URL.includes("imgur.com"), "storefront graphic configured");
 console.assert(typeof Icon === "function", "icons configured");
 console.assert(true === true, "hero section cleaned up");
 console.assert("Local Shoppers Weekly".length > 0, "short shopper stat label configured");
+console.assert("scroll-mt-28".length > 0, "sticky header anchor offset configured");
+console.assert("deals-marquee".length > 0, "mobile ribbon scrolling configured");
 
 export default function DealsAndStealsHomepage() {
   const scrollingRibbon = TOP_RIBBON.concat(TOP_RIBBON);
@@ -202,6 +204,17 @@ export default function DealsAndStealsHomepage() {
         @media (min-width: 768px) {
           .deals-marquee {
             animation: dealsMarquee 35s linear infinite;
+          }
+        }
+        @media (max-width: 767px) {
+          .deals-marquee {
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            animation: none;
+          }
+          .deals-marquee::-webkit-scrollbar {
+            display: none;
           }
         }
         .count-up-card {
@@ -236,7 +249,7 @@ export default function DealsAndStealsHomepage() {
         </div>
       </header>
 
-      <main id="top">
+      <main id="top" className="scroll-smooth">
         <section className="relative overflow-hidden bg-white">
           <div className="absolute inset-y-0 right-0 hidden w-[48%] bg-gradient-to-l from-[#ffd9ea] via-[#fff1f7] to-transparent lg:block" />
           <div className="absolute -right-10 top-10 hidden h-96 w-96 rounded-full bg-pink-200/70 blur-3xl lg:block" />
@@ -244,30 +257,42 @@ export default function DealsAndStealsHomepage() {
           <div className="absolute right-56 top-40 hidden h-40 w-40 rounded-full bg-white/60 blur-2xl lg:block" />
 
           <div className="relative mx-auto max-w-7xl px-5 py-14 lg:py-20">
-            <div className="relative">
-              <div className="mb-5 inline-flex items-center gap-3 rounded-full bg-teal-100 px-5 py-2 text-sm font-black uppercase tracking-wide text-slate-950 shadow-sm">
-                <span className="relative flex h-3 w-3">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-teal-600"></span>
-                </span>
-                <span>Locally owned in Glen Burnie</span>
+            <div className="relative grid gap-10 lg:grid-cols-[1fr_.72fr] lg:items-center">
+              <div>
+                <div className="mb-5 inline-flex items-center gap-3 rounded-full bg-teal-100 px-5 py-2 text-sm font-black uppercase tracking-wide text-slate-950 shadow-sm">
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-teal-600"></span>
+                  </span>
+                  <span>Locally owned in Glen Burnie</span>
+                </div>
+
+                <h1 className="max-w-4xl text-5xl font-black leading-none tracking-tight text-slate-950 md:text-7xl">
+                  Your hometown spot for brand-name bargains.
+                </h1>
+
+                <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700 md:text-xl">
+                  We source closeout merchandise, overstock, and customer returns so you get premium products at a fraction of the cost.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <a href={FACEBOOK_GROUP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-xl bg-pink-600 px-7 py-4 text-base font-black text-white shadow-md transition hover:bg-pink-700">
+                    Browse Deals <Icon name="arrow" className="ml-2 h-5 w-5" />
+                  </a>
+                  <a href={MAP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-xl border-2 border-sky-600 bg-white px-7 py-4 text-base font-black text-sky-800 transition hover:bg-sky-50">
+                    Plan Your Visit
+                  </a>
+                </div>
               </div>
 
-              <h1 className="max-w-4xl text-5xl font-black leading-none tracking-tight text-slate-950 md:text-7xl">
-                Your hometown spot for brand-name bargains.
-              </h1>
-
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700 md:text-xl">
-                We source closeout merchandise, overstock, and customer returns so you get premium products at a fraction of the cost.
-              </p>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a href={FACEBOOK_GROUP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-xl bg-pink-600 px-7 py-4 text-base font-black text-white shadow-md transition hover:bg-pink-700">
-                  Browse Deals <Icon name="arrow" className="ml-2 h-5 w-5" />
-                </a>
-                <a href={MAP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-xl border-2 border-sky-600 bg-white px-7 py-4 text-base font-black text-sky-800 transition hover:bg-sky-50">
-                  Plan Your Visit
-                </a>
+              <div className="hidden lg:block">
+                <div className="overflow-hidden rounded-[2rem] border-4 border-slate-950 bg-white p-3 shadow-[10px_10px_0_#f2527d] transition duration-500 hover:-translate-y-1 hover:shadow-[14px_14px_0_#f2527d]">
+                  <img
+                    src={STOREFRONT_GRAPHIC_URL}
+                    alt="Illustrated Deals & Steals storefront"
+                    className="h-auto w-full rounded-[1.35rem] object-cover transition duration-700 hover:scale-[1.02]"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -281,7 +306,7 @@ export default function DealsAndStealsHomepage() {
           </div>
         </section>
 
-        <section id="hours" className="bg-slate-950 text-white">
+        <section id="hours" className="scroll-mt-28 bg-slate-950 text-white">
           <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 md:grid-cols-[.8fr_1.2fr] md:items-center">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.22em] text-teal-300">Store hours</p>
@@ -348,7 +373,7 @@ export default function DealsAndStealsHomepage() {
           </div>
         </section>
 
-        <section id="difference" className="mx-auto max-w-7xl px-5 py-20">
+        <section id="difference" className="scroll-mt-28 mx-auto max-w-7xl px-5 py-20">
           <div className="mb-12">
             <p className="font-black uppercase tracking-[0.25em] text-teal-600">Why shop with us</p>
             <h2 className="mt-3 text-5xl font-black tracking-tight text-slate-950">The Deals & Steals Difference</h2>
@@ -370,7 +395,7 @@ export default function DealsAndStealsHomepage() {
           </div>
         </section>
 
-        <section id="pickup" className="bg-pink-600 text-white">
+        <section id="pickup" className="scroll-mt-28 bg-pink-600 text-white">
           <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 md:grid-cols-[.9fr_1.1fr] md:items-center">
             <div>
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-pink-600">
@@ -423,7 +448,7 @@ export default function DealsAndStealsHomepage() {
           </div>
         </section>
 
-        <section id="visit" className="bg-gradient-to-br from-white via-[#fff8ef] to-pink-50">
+        <section id="visit" className="scroll-mt-28 bg-gradient-to-br from-white via-[#fff8ef] to-pink-50">
           <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 md:grid-cols-2 md:items-center">
             <div>
               <p className="font-black uppercase tracking-[0.25em] text-teal-700">Visit us</p>
