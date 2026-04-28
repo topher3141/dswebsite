@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
 const LOYALTY_URL = "https://app.squareup.com/loyalty/ML6ZZS746Y0MJ";
-const MAP_URL = "const MAP_URL = "https://maps.app.goo.gl/X5aRKYCCKWmEKzUD6";
+const MAP_URL = "https://maps.app.goo.gl/X5aRKYCCKWmEKzUD6";
 const LOGO_URL = "https://i.imgur.com/euamaJ6.png";
 const STOREFRONT_GRAPHIC_URL = "https://i.imgur.com/1M5YhOV.jpeg";
 
