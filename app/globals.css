@@ -1,8 +1,6 @@
-@import "tailwindcss";
-
-:root {
-  color-scheme: light;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html {
   scroll-behavior: smooth;
@@ -10,9 +8,5 @@ html {
 
 body {
   margin: 0;
-  background: #f7efe5;
-}
-
-button, a {
-  -webkit-tap-highlight-color: transparent;
+  padding: 0;
 }

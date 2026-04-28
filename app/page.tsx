@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
@@ -5,7 +7,7 @@ const LOYALTY_URL = "https://app.squareup.com/loyalty/ML6ZZS746Y0MJ";
 const MAP_URL = "https://www.google.com/maps/search/?api=1&query=510%20McCormick%20Drive%20Suite%20B%20Glen%20Burnie%20MD%2021061";
 const LOGO_URL = "https://i.imgur.com/euamaJ6.png";
 
-function CountUp({ end, duration = 2600, suffix = "", start = false }) {
+function CountUp({ end, duration = 2600, suffix = "", start = false }: { end: number; duration?: number; suffix?: string; start?: boolean }) {
   const [value, setValue] = useState(0);
 
   useEffect(() => {
@@ -14,10 +16,10 @@ function CountUp({ end, duration = 2600, suffix = "", start = false }) {
       return undefined;
     }
 
-    let frameId;
+    let frameId: number;
     const startTime = performance.now();
 
-    const update = (currentTime) => {
+    const update = (currentTime: number) => {
       const progress = Math.min((currentTime - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(end * eased));
@@ -40,7 +42,7 @@ function CountUp({ end, duration = 2600, suffix = "", start = false }) {
 }
 
 function useRevealCountUp() {
-  const [ref, setRef] = useState(null);
+  const [ref, setRef] = useState<HTMLElement | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ function useRevealCountUp() {
   return { setRef, isRevealed };
 }
 
-function Icon({ name, className = "" }) {
+function Icon({ name, className = "" }: { name: string; className?: string }) {
   const common = `h-6 w-6 ${className}`;
 
   if (name === "facebook") {
@@ -148,7 +150,7 @@ const REASONS = [
   },
 ];
 
-function validateContent(hours, reasons, ribbon) {
+function validateContent(hours: typeof HOURS, reasons: typeof REASONS, ribbon: typeof TOP_RIBBON) {
   return Boolean(
     Array.isArray(hours) &&
       hours.length === 3 &&
@@ -454,7 +456,6 @@ export default function DealsAndStealsHomepage() {
           <div>
             <p className="text-lg font-black text-slate-950">Deals & Steals</p>
             <p className="mt-3 text-sm font-bold tracking-[0.18em] text-pink-600">shop small, SAVE BIG.</p>
-            
           </div>
 
           <div>
@@ -481,11 +482,11 @@ export default function DealsAndStealsHomepage() {
             </div>
           </div>
         </div>
-              <div className="mx-auto mt-8 max-w-7xl border-t border-slate-200 pt-5 text-center text-sm font-medium text-slate-500">
+
+        <div className="mx-auto mt-8 max-w-7xl border-t border-slate-200 pt-5 text-center text-sm font-medium text-slate-500">
           510 McCormick Drive | Suite B | Glen Burnie, MD 21061
         </div>
       </footer>
     </div>
   );
 }
-
