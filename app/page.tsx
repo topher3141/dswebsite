@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
 const LOYALTY_URL = "https://app.squareup.com/loyalty/ML6ZZS746Y0MJ";
-const MAP_URL = "https://www.google.com/maps/place/Deals+and+Steals+Discount+Store/@39.1590596,-76.6760519,843m/data=!3m1!1e3!4m15!1m8!3m7!1s0x89b7e30e27b80aa7:0x92dc78405b57f9a5!2s510+McCormick+Dr+Suite+B,+Glen+Burnie,+MD+21061!3b1!8m2!3d39.1590596!4d-76.6760519!16s%2Fg%2F11xldw0wtl!3m5!1s0x89b7e3f74efc1a51:0x1a40301fc2758612!8m2!3d39.1582962!4d-76.6761868!16s%2Fg%2F11wtkt3qp3?entry=ttu&g_ep=EgoyMDI2MDQyMi4wIKXMDSoASAFQAw%3D%3D";
+const MAP_URL = "const MAP_URL = "https://maps.app.goo.gl/X5aRKYCCKWmEKzUD6";
 const LOGO_URL = "https://i.imgur.com/euamaJ6.png";
 const STOREFRONT_GRAPHIC_URL = "https://i.imgur.com/1M5YhOV.jpeg";
 
