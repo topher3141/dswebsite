@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import React, { useEffect, useState } from "react";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
@@ -169,7 +171,7 @@ console.assert(HOURS[0].time === "1 PM - 7 PM", "thursday hours correct");
 console.assert(REASONS.some((item) => item.title === "Community first"), "small business message present");
 console.assert(TOP_RIBBON.includes("New Arrivals Weekly"), "ribbon promotes new arrivals");
 console.assert(TOP_RIBBON.length * 2 === 16, "duplicated ribbon has expected item count");
-console.assert([90, 1000, 500].length === 3, "stats configured");
+console.assert([90, 1000, 10000].length === 3, "stats configured");
 console.assert(typeof CountUp === "function", "count up component configured");
 console.assert(typeof useRevealCountUp === "function", "scroll reveal count up hook configured");
 console.assert(FACEBOOK_GROUP_URL.includes("facebook.com"), "facebook group link configured");
@@ -179,7 +181,7 @@ console.assert(LOGO_URL.includes("imgur.com"), "wide logo configured");
 console.assert(STOREFRONT_GRAPHIC_URL.includes("imgur.com"), "storefront graphic configured");
 console.assert(typeof Icon === "function", "icons configured");
 console.assert(true === true, "hero section cleaned up");
-console.assert("Local Shoppers Weekly".length > 0, "short shopper stat label configured");
+console.assert("Happy Local Shoppers".length > 0, "short shopper stat label configured");
 console.assert("scroll-mt-28".length > 0, "sticky header anchor offset configured");
 console.assert("deals-marquee".length > 0, "mobile ribbon scrolling configured");
 console.assert("Shop with us On Facebook or In Store".length > 0, "facebook and in-store shopping section configured");
@@ -367,9 +369,9 @@ export default function DealsAndStealsHomepage() {
               <div className="count-up-card relative overflow-hidden rounded-[2rem] border-2 border-teal-100 bg-white p-7 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-md [animation-delay:240ms]">
                 <div className="stat-accent bg-teal-500" />
                 <div className="relative mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-teal-500 text-3xl shadow-sm" role="img" aria-hidden="true">🛒</div>
-                <p className="relative text-sm font-black uppercase tracking-[0.18em] text-slate-500">Local Shoppers Weekly</p>
+                <p className="relative text-sm font-black uppercase tracking-[0.18em] text-slate-500">Happy Local Shoppers</p>
                 <p className="count-up-number relative mt-3 text-6xl font-black leading-none text-slate-950 [animation-delay:240ms]">
-                  <CountUp end={500} suffix="+" start={statsReveal.isRevealed} />
+                  <CountUp end={10000} suffix="+" start={statsReveal.isRevealed} />
                 </p>
               </div>
             </div>
@@ -450,8 +452,19 @@ export default function DealsAndStealsHomepage() {
         </section>
 
         <section id="visit" className="scroll-mt-28 bg-white">
-          <div className="mx-auto grid max-w-7xl gap-10 px-5 py-18 md:grid-cols-[1.05fr_.95fr] md:items-center">
-            <div>
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:grid-cols-[.95fr_1.05fr] md:items-center">
+            <div className="order-2 md:order-1 rounded-[2rem] border-4 border-slate-950 bg-white p-5 shadow-lg -rotate-[1deg]">
+              <div className="overflow-hidden rounded-[1.5rem] border border-slate-200">
+                <iframe
+                  title="Deals and Steals Map"
+                  src="https://www.google.com/maps?q=Deals%20%26%20Steals%20Glen%20Burnie&output=embed"
+                  className="h-[280px] w-full"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            <div className="order-1 md:order-2">
               <p className="font-black uppercase tracking-[0.25em] text-teal-700">Come Visit Us</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 md:text-4xl lg:text-5xl">Come see what’s new in store.</h2>
               <p className="mt-5 max-w-xl text-lg leading-8 text-slate-700">
@@ -460,17 +473,6 @@ export default function DealsAndStealsHomepage() {
               <div className="mt-7 inline-flex items-center gap-3 rounded-xl bg-[#f7efe5] px-4 py-3 font-bold text-slate-800">
                 <Icon name="map" className="h-5 w-5 text-pink-600" />
                 <span>510 McCormick Drive | Suite B, Glen Burnie, MD 21061</span>
-              </div>
-            </div>
-
-            <div className="rounded-[2rem] border-4 border-slate-950 bg-white p-5 shadow-lg rotate-[1deg]">
-              <div className="overflow-hidden rounded-[1.5rem] border border-slate-200">
-                <iframe
-                  title="Deals and Steals Map"
-                  src="https://www.google.com/maps?q=Deals%20%26%20Steals%20Glen%20Burnie&output=embed"
-                  className="h-[280px] w-full"
-                  loading="lazy"
-                />
               </div>
             </div>
           </div>
