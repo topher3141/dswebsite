@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
 const LOYALTY_URL = "https://app.squareup.com/loyalty/ML6ZZS746Y0MJ";
-const MAP_URL = "https://www.google.com/maps/search/?api=1&query=510%20McCormick%20Drive%20Suite%20B%20Glen%20Burnie%20MD%2021061";
+const MAP_URL = "https://www.google.com/maps/place/Deals+and+Steals+Discount+Store/@39.1583003,-76.6787617,843m/data=!3m2!1e3!4b1!4m6!3m5!1s0x89b7e3f74efc1a51:0x1a40301fc2758612!8m2!3d39.1582962!4d-76.6761868!16s%2Fg%2F11wtkt3qp3?entry=ttu&g_ep=EgoyMDI2MDQyMi4wIKXMDSoASAFQAw%3D%3D";
 const LOGO_URL = "https://i.imgur.com/euamaJ6.png";
 const STOREFRONT_GRAPHIC_URL = "https://i.imgur.com/1M5YhOV.jpeg";
 
