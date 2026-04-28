@@ -169,12 +169,12 @@ console.assert(HOURS[0].time === "1 PM - 7 PM", "thursday hours correct");
 console.assert(REASONS.some((item) => item.title === "Community first"), "small business message present");
 console.assert(TOP_RIBBON.includes("New Arrivals Weekly"), "ribbon promotes new arrivals");
 console.assert(TOP_RIBBON.length * 2 === 16, "duplicated ribbon has expected item count");
-console.assert([90, 3000, 500].length === 3, "stats configured");
+console.assert([90, 1000, 500].length === 3, "stats configured");
 console.assert(typeof CountUp === "function", "count up component configured");
 console.assert(typeof useRevealCountUp === "function", "scroll reveal count up hook configured");
 console.assert(FACEBOOK_GROUP_URL.includes("facebook.com"), "facebook group link configured");
 console.assert(LOYALTY_URL.includes("squareup.com"), "loyalty link configured");
-console.assert(MAP_URL.includes("google.com"), "map link configured");
+console.assert(MAP_URL.includes("maps.app.goo.gl"), "map link configured");
 console.assert(LOGO_URL.includes("imgur.com"), "wide logo configured");
 console.assert(STOREFRONT_GRAPHIC_URL.includes("imgur.com"), "storefront graphic configured");
 console.assert(typeof Icon === "function", "icons configured");
@@ -359,7 +359,7 @@ export default function DealsAndStealsHomepage() {
                 <div className="relative mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-3xl shadow-sm" role="img" aria-hidden="true">📦</div>
                 <p className="relative text-sm font-black uppercase tracking-[0.18em] text-slate-500">Items Added Weekly</p>
                 <p className="count-up-number relative mt-3 text-6xl font-black leading-none text-slate-950 [animation-delay:120ms]">
-                  <CountUp end={3000} suffix="+" start={statsReveal.isRevealed} />
+                  <CountUp end={1000} suffix="+" start={statsReveal.isRevealed} />
                 </p>
               </div>
 
@@ -468,7 +468,7 @@ export default function DealsAndStealsHomepage() {
               <div className="overflow-hidden rounded-[1.5rem] border border-slate-200">
                 <iframe
                   title="Deals and Steals Map"
-                  src="https://www.google.com/maps?q=510%20McCormick%20Drive%20Suite%20B%20Glen%20Burnie%20MD%2021061&output=embed"
+                  src="https://www.google.com/maps?q=Deals%20%26%20Steals%20Glen%20Burnie&output=embed"
                   className="h-[280px] w-full"
                   loading="lazy"
                 />
@@ -511,7 +511,9 @@ export default function DealsAndStealsHomepage() {
         </div>
 
         <div className="mx-auto mt-8 max-w-7xl border-t border-slate-200 pt-5 text-center text-sm font-medium text-slate-500">
-          510 McCormick Drive | Suite B | Glen Burnie, MD 21061
+          <a href={MAP_URL} target="_blank" rel="noreferrer" className="hover:text-pink-600 transition">
+            510 McCormick Drive | Suite B | Glen Burnie, MD 21061
+          </a>
         </div>
       </footer>
     </div>
