@@ -182,6 +182,7 @@ console.assert(true === true, "hero section cleaned up");
 console.assert("Local Shoppers Weekly".length > 0, "short shopper stat label configured");
 console.assert("scroll-mt-28".length > 0, "sticky header anchor offset configured");
 console.assert("deals-marquee".length > 0, "mobile ribbon scrolling configured");
+console.assert("Shop with us On Facebook or In Store".length > 0, "facebook and in-store shopping section configured");
 
 export default function DealsAndStealsHomepage() {
   const scrollingRibbon = TOP_RIBBON.concat(TOP_RIBBON);
@@ -403,10 +404,8 @@ export default function DealsAndStealsHomepage() {
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-pink-600">
                 <Icon name="facebook" />
               </div>
-              <h2 className="text-4xl font-black tracking-tight md:text-5xl">Shop with us on Facebook, then pick up local.</h2>
-              <p className="mt-5 text-lg leading-8 text-pink-50">
-                Claim items during live sales or weekly item posts, then check your invoice, pay online, and pick up during posted store hours.
-              </p>
+              <h2 className="text-4xl font-black tracking-tight md:text-5xl">Three Ways to Shop</h2>
+              
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <a href={FACEBOOK_GROUP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-xl bg-white px-7 py-4 font-black text-pink-700 shadow-md transition hover:bg-slate-100">
                   Browse Deals <Icon name="arrow" className="ml-2 h-5 w-5" />
@@ -415,7 +414,7 @@ export default function DealsAndStealsHomepage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              {["Claim during live sales or weekly item posts", "Pay your weekly invoice", "Pick up during store hours"].map((step, index) => (
+              {["Claim weekly deals on our Facebook page", "Watch live sales", "Shop and pick up in person"].map((step, index) => (
                 <div key={step} className="rounded-2xl bg-white p-5 text-slate-950 shadow-md">
                   <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-lg font-black">{index + 1}</div>
                   <p className="font-black leading-6">{step}</p>
@@ -428,7 +427,7 @@ export default function DealsAndStealsHomepage() {
         <section className="bg-gradient-to-r from-[#fff8ef] via-[#fff3f8] to-white py-14">
           <div className="mx-auto grid max-w-7xl gap-6 px-5 md:grid-cols-[.9fr_1.1fr] md:items-center">
             <div>
-              <p className="font-black uppercase tracking-[0.25em] text-pink-600">Rewards program</p>
+              <p className="font-black uppercase tracking-[0.25em] text-pink-600">Extra Savings Perks</p>
               <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-950 md:text-5xl">Earn rewards while you save.</h2>
               <p className="mt-5 max-w-xl text-lg leading-8 text-slate-700">
                 Join our loyalty program to earn rewards on eligible purchases and stay connected with Deals & Steals perks.
@@ -450,21 +449,21 @@ export default function DealsAndStealsHomepage() {
           </div>
         </section>
 
-        <section id="visit" className="scroll-mt-28 bg-gradient-to-br from-white via-[#fff8ef] to-pink-50">
-          <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 md:grid-cols-2 md:items-center">
+        <section id="visit" className="scroll-mt-28 bg-white">
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 py-18 md:grid-cols-[1.05fr_.95fr] md:items-center">
             <div>
-              <p className="font-black uppercase tracking-[0.25em] text-teal-700">Visit us</p>
-              <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950 md:text-3xl lg:text-4xl xl:text-5xl">Come see what’s new in store.</h2>
+              <p className="font-black uppercase tracking-[0.25em] text-teal-700">Come Visit Us</p>
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 md:text-4xl lg:text-5xl">Come see what’s new in store.</h2>
               <p className="mt-5 max-w-xl text-lg leading-8 text-slate-700">
                 New inventory arrives weekly with fresh bargains, rotating finds, and closeout deals worth checking out again and again.
               </p>
-              <div className="mt-6 flex items-center gap-3 font-bold text-slate-800">
+              <div className="mt-7 inline-flex items-center gap-3 rounded-xl bg-[#f7efe5] px-4 py-3 font-bold text-slate-800">
                 <Icon name="map" className="h-5 w-5 text-pink-600" />
                 <span>510 McCormick Drive | Suite B, Glen Burnie, MD 21061</span>
               </div>
             </div>
 
-            <div className="rounded-[2rem] border-4 border-slate-950 bg-white p-5 shadow-sm">
+            <div className="rounded-[2rem] border-4 border-slate-950 bg-white p-5 shadow-lg rotate-[1deg]">
               <div className="overflow-hidden rounded-[1.5rem] border border-slate-200">
                 <iframe
                   title="Deals and Steals Map"
