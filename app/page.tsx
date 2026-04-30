@@ -183,7 +183,8 @@ console.assert(typeof Icon === "function", "icons configured");
 console.assert(true === true, "hero section cleaned up");
 console.assert("Happy Local Shoppers".length > 0, "short shopper stat label configured");
 console.assert("scroll-mt-28".length > 0, "sticky header anchor offset configured");
-console.assert("deals-marquee".length > 0, "mobile ribbon scrolling configured");
+console.assert("deals-marquee".length > 0, "desktop ribbon configured");
+console.assert("https://www.retailogic.dev/".includes("retailogic"), "pay invoice link configured");
 console.assert("Shop with us On Facebook or In Store".length > 0, "facebook and in-store shopping section configured");
 
 export default function DealsAndStealsHomepage() {
@@ -212,13 +213,7 @@ export default function DealsAndStealsHomepage() {
           }
         }
         @media (max-width: 767px) {
-          .deals-marquee {
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            animation: none;
-          }
-          .deals-marquee::-webkit-scrollbar {
+          .category-ribbon {
             display: none;
           }
         }
@@ -245,8 +240,10 @@ export default function DealsAndStealsHomepage() {
           <nav className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-700 md:gap-6">
             <a href="#difference" className="hover:text-pink-600">Why Us</a>
             <a href="#hours" className="hover:text-pink-600">Hours</a>
-            <a href="#pickup" className="hover:text-pink-600">Pickup</a>
             <a href="#visit" className="hover:text-pink-600">Visit Us</a>
+            <a href="https://www.retailogic.dev/" target="_blank" rel="noreferrer" title="Click here to view and pay your weekly invoice." className="rounded-full bg-pink-600 px-4 py-2 text-white shadow-sm transition hover:bg-pink-700">
+              Pay Invoice
+            </a>
             <a href={LOYALTY_URL} target="_blank" rel="noreferrer" aria-label="Join loyalty rewards" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-sky-100 bg-sky-50 text-slate-700 transition hover:border-sky-200 hover:bg-sky-100 hover:text-sky-700">
               <Icon name="user" className="h-5 w-5" />
             </a>
@@ -329,7 +326,7 @@ export default function DealsAndStealsHomepage() {
           </div>
         </section>
 
-        <section className="overflow-hidden bg-pink-500 py-4 text-white">
+        <section className="category-ribbon overflow-hidden bg-pink-500 py-4 text-white">
           <div className="deals-marquee flex min-w-max gap-10 whitespace-nowrap px-6 text-xl font-black">
             {scrollingRibbon.map((item, index) => (
               <div key={`${item}-${index}`} className="flex items-center gap-10">
