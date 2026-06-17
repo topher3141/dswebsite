@@ -36,6 +36,7 @@ function parsePriceToCents(value: unknown) {
   if (value === null || value === undefined) return null;
 
   if (typeof value === "number" && Number.isFinite(value)) {
+    // If Square/custom attribute sends 4, treat as $4.00.
     return Math.round(value * 100);
   }
 
@@ -62,7 +63,12 @@ function extractCustomAttributePriceCents(object: any, possibleNames: string[]) 
   const normalizedNames = possibleNames.map(normalizeLabel);
 
   for (const value of Object.values(values) as any[]) {
-    const label = normalizeLabel(value?.name || value?.key || value?.custom_attribute_definition_id);
+    const label = normalizeLabel(
+      value?.name ||
+        value?.key ||
+        value?.custom_attribute_definition_id ||
+        value?.custom_attribute_definition?.name
+    );
 
     const matches = normalizedNames.some((name) => label.includes(name));
     if (!matches) continue;
@@ -88,9 +94,13 @@ function findSalePriceCents(item: any, variation: any) {
     variationData.online_sale_price_money,
     variationData.sale_price_money,
     variationData.ecom_sale_price_money,
+    variationData.ecommerce_sale_price_money,
+    variationData.square_online_sale_price_money,
     itemData.online_sale_price_money,
     itemData.sale_price_money,
     itemData.ecom_sale_price_money,
+    itemData.ecommerce_sale_price_money,
+    itemData.square_online_sale_price_money,
   ];
 
   for (const money of directMoneyCandidates) {
@@ -122,22 +132,52 @@ function findSalePriceCents(item: any, variation: any) {
 }
 
 function findRetailPriceCents(item: any, variation: any) {
+  const itemData = item?.item_data || {};
+  const variationData = variation?.item_variation_data || {};
+
+  const directMoneyCandidates = [
+    variationData.retail_price_money,
+    variationData.original_price_money,
+    variationData.original_retail_price_money,
+    variationData.msrp_money,
+    variationData.compare_at_price_money,
+    variationData.ecom_regular_price_money,
+    variationData.regular_price_money,
+    itemData.retail_price_money,
+    itemData.original_price_money,
+    itemData.original_retail_price_money,
+    itemData.msrp_money,
+    itemData.compare_at_price_money,
+    itemData.ecom_regular_price_money,
+    itemData.regular_price_money,
+  ];
+
+  for (const money of directMoneyCandidates) {
+    if (typeof money?.amount === "number") {
+      return money.amount;
+    }
+  }
+
   return (
     extractCustomAttributePriceCents(variation, [
       "retail",
       "retail price",
       "original retail",
       "original retail price",
+      "original price",
       "msrp",
       "compare at price",
+      "compare price",
     ]) ??
     extractCustomAttributePriceCents(item, [
       "retail",
       "retail price",
       "original retail",
       "original retail price",
+      "original price",
       "msrp",
       "compare at price",
+      "compare price",
     ])
   );
 }
@@ -327,15 +367,15 @@ export async function GET() {
         return {
           ...item,
           stockCount,
-          lowStock: stockCount <= LOW_STOCK_THRESHOLD,
+          lowStock: stockCount > 0 && stockCount <= LOW_STOCK_THRESHOLD,
         };
       })
-      .filter((item: any) => item.stockCount > 1);
+      .filter((item: any) => item.stockCount > 0);
 
     return NextResponse.json({
       products,
       count: products.length,
-      hiddenBecauseOutOfStockOrOneLeft: rawProducts.length - products.length,
+      hiddenBecauseOutOfStock: rawProducts.length - products.length,
       lowStockThreshold: LOW_STOCK_THRESHOLD,
     });
   } catch (error: any) {
