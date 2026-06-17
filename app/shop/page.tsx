@@ -79,6 +79,14 @@ export default function ShopPage() {
           cache: "no-store",
         });
 
+        const contentType = response.headers.get("content-type") || "";
+
+        if (!contentType.includes("application/json")) {
+          throw new Error(
+            `Featured items route returned ${response.status}. Check /api/square/featured-items.`
+          );
+        }
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -121,6 +129,17 @@ export default function ShopPage() {
           itemName: item.name,
         }),
       });
+
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Non-JSON checkout response:", text);
+
+        throw new Error(
+          `Checkout route returned ${response.status}. This means /api/square/create-checkout is not being found or is returning an HTML error page.`
+        );
+      }
 
       const data = await response.json();
 
