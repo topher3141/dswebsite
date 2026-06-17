@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 const SQUARE_BASE_URL = "https://connect.squareup.com";
 const SQUARE_API_VERSION = process.env.SQUARE_API_VERSION || "2026-05-20";
+const LOW_STOCK_THRESHOLD = 3;
 
 type SquareMoney = {
   amount?: number;
@@ -17,6 +18,13 @@ function formatMoney(money?: SquareMoney) {
     style: "currency",
     currency: money.currency || "USD",
   }).format(money.amount / 100);
+}
+
+function parseSquareQuantity(quantity?: string | number | null) {
+  if (quantity === null || quantity === undefined) return 0;
+
+  const parsed = Number(quantity);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 async function squarePost(path: string, body: unknown) {
@@ -45,6 +53,38 @@ async function squarePost(path: string, body: unknown) {
   }
 
   return data;
+}
+
+async function getInventoryCounts(variationIds: string[], locationId: string) {
+  if (variationIds.length === 0) return {};
+
+  const inventoryByVariationId: Record<string, number> = {};
+  let cursor: string | undefined;
+
+  do {
+    const inventoryResponse = await squarePost("/v2/inventory/counts/batch-retrieve", {
+      catalog_object_ids: variationIds,
+      location_ids: [locationId],
+      states: ["IN_STOCK"],
+      cursor,
+    });
+
+    const counts = inventoryResponse.counts || [];
+
+    counts.forEach((count: any) => {
+      const variationId = count.catalog_object_id;
+      const quantity = parseSquareQuantity(count.quantity);
+
+      if (!variationId) return;
+
+      inventoryByVariationId[variationId] =
+        (inventoryByVariationId[variationId] || 0) + quantity;
+    });
+
+    cursor = inventoryResponse.cursor;
+  } while (cursor);
+
+  return inventoryByVariationId;
 }
 
 export async function GET() {
@@ -76,9 +116,7 @@ export async function GET() {
     const items = catalogResponse.items || [];
 
     const imageIds = Array.from(
-      new Set(
-        items.flatMap((item: any) => item.item_data?.image_ids || [])
-      )
+      new Set(items.flatMap((item: any) => item.item_data?.image_ids || []))
     );
 
     let imageMap: Record<string, string> = {};
@@ -89,7 +127,7 @@ export async function GET() {
         include_related_objects: false,
       });
 
-      imageMap = (imageResponse.objects || {}).reduce(
+      imageMap = (imageResponse.objects || []).reduce(
         (map: Record<string, string>, object: any) => {
           if (object.type === "IMAGE" && object.image_data?.url) {
             map[object.id] = object.image_data.url;
@@ -100,7 +138,7 @@ export async function GET() {
       );
     }
 
-    const products = items
+    const rawProducts = items
       .map((item: any) => {
         const itemData = item.item_data || {};
         const variations = itemData.variations || [];
@@ -112,7 +150,6 @@ export async function GET() {
 
         const variationData = firstPricedVariation?.item_variation_data || {};
         const priceMoney = variationData.price_money;
-
         const firstImageId = itemData.image_ids?.[0];
 
         return {
@@ -131,11 +168,31 @@ export async function GET() {
           squareUrl: null,
         };
       })
-      .filter((item: any) => item.priceAmount !== null);
+      .filter((item: any) => item.priceAmount !== null && item.variationId);
+
+    const variationIds = rawProducts
+      .map((item: any) => item.variationId)
+      .filter(Boolean);
+
+    const inventoryByVariationId = await getInventoryCounts(variationIds, locationId);
+
+    const products = rawProducts
+      .map((item: any) => {
+        const stockCount = inventoryByVariationId[item.variationId] || 0;
+
+        return {
+          ...item,
+          stockCount,
+          lowStock: stockCount <= LOW_STOCK_THRESHOLD,
+        };
+      })
+      .filter((item: any) => item.stockCount > 1);
 
     return NextResponse.json({
       products,
       count: products.length,
+      hiddenBecauseOutOfStockOrOneLeft: rawProducts.length - products.length,
+      lowStockThreshold: LOW_STOCK_THRESHOLD,
     });
   } catch (error: any) {
     console.error(error);
