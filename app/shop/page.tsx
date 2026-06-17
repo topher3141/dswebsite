@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
 const LOYALTY_URL = "https://app.squareup.com/loyalty/ML6ZZS746Y0MJ";
@@ -8,82 +8,20 @@ const MAP_URL = "https://maps.app.goo.gl/X5aRKYCCKWmEKzUD6";
 const INVOICE_URL = "https://www.retailogic.dev/";
 const LOGO_URL = "https://i.imgur.com/euamaJ6.png";
 
-const CATEGORIES = ["All", "Home", "Electronics", "Apparel", "Toys", "Outdoor", "Seasonal"];
+const CATEGORIES = ["All"];
 
-const PRODUCTS = [
-  {
-    id: 1,
-    name: "Ninja Dual Air Fryer",
-    category: "Home",
-    retail: "$179.99",
-    price: "$89.99",
-    image: "https://images.unsplash.com/photo-1626201850129-a92f04f2c1ec?q=80&w=900",
-    squareUrl: "#",
-  },
-  {
-    id: 2,
-    name: "Adidas Cloudfoam Sneakers",
-    category: "Apparel",
-    retail: "$80.00",
-    price: "$34.99",
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=900",
-    squareUrl: "#",
-  },
-  {
-    id: 3,
-    name: "Patio Conversation Set",
-    category: "Outdoor",
-    retail: "$399.99",
-    price: "$199.99",
-    image: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=900",
-    squareUrl: "#",
-  },
-  {
-    id: 4,
-    name: "Roku Smart TV",
-    category: "Electronics",
-    retail: "$349.99",
-    price: "$199.99",
-    image: "https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=900",
-    squareUrl: "#",
-  },
-  {
-    id: 5,
-    name: "KitchenAid Stand Mixer",
-    category: "Home",
-    retail: "$449.99",
-    price: "$249.99",
-    image: "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?q=80&w=900",
-    squareUrl: "#",
-  },
-  {
-    id: 6,
-    name: "Rolling Tool Chest",
-    category: "Home",
-    retail: "$599.99",
-    price: "$279.99",
-    image: "https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?q=80&w=900",
-    squareUrl: "#",
-  },
-  {
-    id: 7,
-    name: "Kids Ride-On Jeep",
-    category: "Toys",
-    retail: "$349.99",
-    price: "$149.99",
-    image: "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=80&w=900",
-    squareUrl: "#",
-  },
-  {
-    id: 8,
-    name: "Cordless Stick Vacuum",
-    category: "Home",
-    retail: "$349.99",
-    price: "$179.99",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=900",
-    squareUrl: "#",
-  },
-];
+type Product = {
+  id: string;
+  variationId?: string | null;
+  name: string;
+  description?: string;
+  category?: string;
+  price: string;
+  priceAmount?: number | null;
+  currency?: string;
+  image?: string | null;
+  squareUrl?: string | null;
+};
 
 function Icon({ name, className = "" }: { name: string; className?: string }) {
   const common = `h-6 w-6 ${className}`;
@@ -128,11 +66,38 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const response = await fetch("/api/square/featured-items", {
+          cache: "no-store",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data?.error || "Unable to load products");
+        }
+
+        setProducts(data.products || []);
+      } catch (err: any) {
+        setError(err.message || "Unable to load products");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, []);
 
   const visibleProducts = useMemo(() => {
-    if (selectedCategory === "All") return PRODUCTS;
-    return PRODUCTS.filter((item) => item.category === selectedCategory);
-  }, [selectedCategory]);
+    if (selectedCategory === "All") return products;
+    return products.filter((item) => item.category === selectedCategory);
+  }, [selectedCategory, products]);
 
   return (
     <div className="min-h-screen bg-[#f7efe5] text-slate-900">
@@ -228,61 +193,86 @@ export default function ShopPage() {
             </div>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {visibleProducts.map((item) => (
-              <article
-                key={item.id}
-                className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-              >
-                <div className="relative">
-                  <img src={item.image} alt={item.name} className="h-56 w-full object-cover" />
-                  <span className="absolute left-4 top-4 rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase text-white">
-                    Featured
-                  </span>
-                </div>
-
-                <div className="p-5">
-                  <p className="text-xs font-black uppercase tracking-wide text-teal-700">
-                    {item.category}
-                  </p>
-
-                  <h3 className="mt-2 min-h-[3.2rem] text-xl font-black leading-tight text-slate-950">
-                    {item.name}
-                  </h3>
-
-                  <p className="mt-4 text-sm font-bold text-slate-500">
-                    Retail: <span className="line-through">{item.retail}</span>
-                  </p>
-
-                  <p className="mt-1 text-xs font-black uppercase tracking-wide text-pink-600">
-                    Deals & Steals Price
-                  </p>
-
-                  <p className="text-3xl font-black text-slate-950">{item.price}</p>
-
-                  <div className="mt-4 space-y-1 text-sm font-bold text-slate-600">
-                    <p>✅ Pickup Available</p>
-                    <p>✅ Limited Quantity</p>
-                  </div>
-
-                  <a
-                    href={item.squareUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-teal-700 px-5 py-3 font-black text-white transition hover:bg-teal-800"
-                  >
-                    View / Buy Item <Icon name="arrow" className="ml-2 h-5 w-5" />
-                  </a>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          {visibleProducts.length === 0 && (
+          {isLoading && (
             <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
-              <h3 className="text-2xl font-black">No items found.</h3>
-              <p className="mt-2 text-slate-600">Try a different category or check back soon.</p>
+              <h3 className="text-2xl font-black">Loading featured finds...</h3>
+              <p className="mt-2 text-slate-600">Pulling the latest items from Square.</p>
             </div>
+          )}
+
+          {error && (
+            <div className="rounded-[2rem] border border-pink-200 bg-white p-10 text-center">
+              <h3 className="text-2xl font-black text-pink-600">Unable to load items.</h3>
+              <p className="mt-2 text-slate-600">{error}</p>
+            </div>
+          )}
+
+          {!isLoading && !error && (
+            <>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {visibleProducts.map((item) => (
+                  <article
+                    key={item.id}
+                    className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                  >
+                    <div className="relative">
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="h-56 w-full object-cover" />
+                      ) : (
+                        <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
+                          Image Coming Soon
+                        </div>
+                      )}
+
+                      <span className="absolute left-4 top-4 rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase text-white">
+                        Featured
+                      </span>
+                    </div>
+
+                    <div className="p-5">
+                      <p className="text-xs font-black uppercase tracking-wide text-teal-700">
+                        {item.category || "Featured Find"}
+                      </p>
+
+                      <h3 className="mt-2 min-h-[3.2rem] text-xl font-black leading-tight text-slate-950">
+                        {item.name}
+                      </h3>
+
+                      {item.description && (
+                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+                          {item.description}
+                        </p>
+                      )}
+
+                      <p className="mt-4 text-xs font-black uppercase tracking-wide text-pink-600">
+                        Deals & Steals Price
+                      </p>
+
+                      <p className="text-3xl font-black text-slate-950">{item.price}</p>
+
+                      <div className="mt-4 space-y-1 text-sm font-bold text-slate-600">
+                        <p>✅ Pickup Available</p>
+                        <p>✅ Limited Quantity</p>
+                      </div>
+
+                      <button
+                        disabled
+                        className="mt-5 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl bg-slate-300 px-5 py-3 font-black text-slate-600"
+                      >
+                        Checkout Coming Soon
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {visibleProducts.length === 0 && (
+                <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
+                  <h3 className="text-2xl font-black">No items found.</h3>
+                  <p className="mt-2 text-slate-600">Try a different category or check back soon.</p>
+                </div>
+              )}
+            </>
           )}
         </section>
 
