@@ -114,6 +114,66 @@ function StockLine({ item }: { item: Product }) {
   );
 }
 
+function RetailCompare({
+  retailPrice,
+  savingsPercent,
+}: {
+  retailPrice?: string;
+  savingsPercent: number | null;
+}) {
+  if (!retailPrice) return null;
+
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-2">
+      <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+        Retail
+      </span>
+
+      <span className="relative inline-flex rotate-[-2deg] items-center rounded-lg bg-white px-2 py-1 text-lg font-black text-slate-500 shadow-sm">
+        <span>{retailPrice}</span>
+        <span className="absolute left-1/2 top-1/2 h-[3px] w-[118%] -translate-x-1/2 -translate-y-1/2 rotate-[-12deg] rounded-full bg-pink-600" />
+      </span>
+
+      {savingsPercent && (
+        <span className="rotate-[2deg] rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white shadow-sm">
+          Score {savingsPercent}% off
+        </span>
+      )}
+    </div>
+  );
+}
+
+function DealPriceBlock({ item, large = false }: { item: Product; large?: boolean }) {
+  const savingsPercent = getSavingsPercent(item);
+  const hasRetail =
+    Boolean(item.retailPrice) &&
+    Boolean(item.retailAmount) &&
+    Boolean(item.dealsAmount) &&
+    Number(item.retailAmount) > Number(item.dealsAmount);
+
+  return (
+    <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-[#fff8ef] via-white to-[#fff1f7] p-4 shadow-sm">
+      {hasRetail && (
+        <RetailCompare retailPrice={item.retailPrice} savingsPercent={savingsPercent} />
+      )}
+
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+        Your Deal
+      </p>
+
+      <div className="flex flex-wrap items-end gap-2">
+        <p className={`${large ? "text-5xl" : "text-4xl"} font-black leading-none tracking-tight text-slate-950`}>
+          {item.dealsPrice || item.price}
+        </p>
+
+        <span className="mb-1 rounded-full bg-teal-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-teal-800">
+          Nice find
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function ProductDescriptionModal({
   product,
   onClose,
@@ -124,18 +184,13 @@ function ProductDescriptionModal({
   if (!product) return null;
 
   const savingsPercent = getSavingsPercent(product);
-  const hasRetail =
-    Boolean(product.retailPrice) &&
-    Boolean(product.retailAmount) &&
-    Boolean(product.dealsAmount) &&
-    Number(product.retailAmount) > Number(product.dealsAmount);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-5 py-8">
       <div className="relative max-h-[90vh] w-full max-w-2xl overflow-auto rounded-[2rem] bg-white p-6 shadow-2xl md:p-8">
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+          className="absolute right-5 top-5 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-md transition hover:bg-slate-100"
           aria-label="Close description"
         >
           <Icon name="close" className="h-5 w-5" />
@@ -150,8 +205,8 @@ function ProductDescriptionModal({
             />
 
             {savingsPercent && (
-              <div className="absolute left-4 top-4 rounded-full bg-pink-600 px-4 py-2 text-sm font-black text-white shadow-md">
-                Save {savingsPercent}%
+              <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-white shadow-md">
+                Score {savingsPercent}% Off
               </div>
             )}
           </div>
@@ -165,28 +220,8 @@ function ProductDescriptionModal({
           {product.name}
         </h3>
 
-        <div className="mt-5 rounded-2xl bg-[#fff8ef] p-5">
-          {hasRetail && (
-            <p className="text-base font-bold text-slate-500">
-              Retail: <span className="line-through">{product.retailPrice}</span>
-            </p>
-          )}
-
-          <p className="mt-1 text-xs font-black uppercase tracking-wide text-pink-600">
-            Deals & Steals Price
-          </p>
-
-          <div className="flex flex-wrap items-end gap-3">
-            <p className="text-4xl font-black text-slate-950">
-              {product.dealsPrice || product.price}
-            </p>
-
-            {savingsPercent && (
-              <p className="rounded-full bg-teal-100 px-3 py-1 text-sm font-black text-teal-800">
-                You save {savingsPercent}%
-              </p>
-            )}
-          </div>
+        <div className="mt-5">
+          <DealPriceBlock item={product} large />
         </div>
 
         <StockLine item={product} />
@@ -346,59 +381,65 @@ export default function ShopPage() {
 
       <main>
         <section className="relative overflow-hidden bg-white">
-          <div className="absolute inset-y-0 right-0 hidden w-[48%] bg-gradient-to-l from-[#ffd9ea] via-[#fff1f7] to-transparent lg:block" />
-          <div className="absolute -right-10 top-10 hidden h-96 w-96 rounded-full bg-pink-200/70 blur-3xl lg:block" />
-          <div className="absolute bottom-6 right-24 hidden h-64 w-64 rounded-full bg-pink-100/45 blur-3xl lg:block" />
+          <div className="absolute inset-y-0 right-0 hidden w-[42%] bg-gradient-to-l from-[#ffd9ea] via-[#fff1f7] to-transparent lg:block" />
+          <div className="absolute -right-16 top-0 hidden h-72 w-72 rounded-full bg-pink-200/70 blur-3xl lg:block" />
 
-          <div className="relative mx-auto max-w-7xl px-5 py-14 lg:py-20">
-            <div className="grid gap-10 lg:grid-cols-[1fr_.55fr] lg:items-end">
-              <div className="max-w-4xl">
-                <div className="mb-5 inline-flex items-center gap-3 rounded-full bg-teal-100 px-5 py-2 text-sm font-black uppercase tracking-wide text-slate-950 shadow-sm">
-                  <span className="relative flex h-3 w-3">
+          <div className="relative mx-auto max-w-7xl px-5 py-9 lg:py-12">
+            <div className="grid gap-6 lg:grid-cols-[1fr_.42fr] lg:items-center">
+              <div>
+                <div className="mb-4 inline-flex items-center gap-3 rounded-full bg-teal-100 px-5 py-2 text-xs font-black uppercase tracking-wide text-slate-950 shadow-sm">
+                  <span className="relative flex h-2.5 w-2.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-teal-600"></span>
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-teal-600"></span>
                   </span>
                   <span>Online Shop</span>
                 </div>
 
-                <h1 className="text-5xl font-black leading-none tracking-tight text-slate-950 md:text-7xl">
+                <h1 className="max-w-4xl text-4xl font-black leading-none tracking-tight text-slate-950 md:text-6xl">
                   Score the kind of deals worth bragging about.
                 </h1>
 
-                <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700 md:text-xl">
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-700 md:text-lg">
                   Hand-picked Deals & Steals finds available for local pickup. Fresh items, limited quantities, and prices that feel like a win.
                 </p>
 
-                <div className="mt-8 flex flex-wrap gap-3 text-sm font-black text-slate-700">
+                <div className="mt-5 flex flex-wrap gap-3 text-sm font-black text-slate-700">
                   <span className="rounded-full bg-[#fff8ef] px-4 py-2">📍 Pickup in Glen Burnie</span>
                   <span className="rounded-full bg-[#fff8ef] px-4 py-2">🔄 Inventory updates weekly</span>
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border-2 border-pink-100 bg-[#fff8ef] p-6 shadow-sm">
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
+              <div className="rounded-[1.5rem] border-2 border-pink-100 bg-[#fff8ef] p-5 shadow-sm">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-pink-600">
                   Deal drop
                 </p>
-                <p className="mt-3 text-4xl font-black leading-none text-slate-950">
+                <p className="mt-2 text-3xl font-black leading-none text-slate-950">
                   Limited finds.
                 </p>
-                <p className="mt-2 text-4xl font-black leading-none text-pink-600">
+                <p className="text-3xl font-black leading-none text-pink-600">
                   Big savings.
-                </p>
-                <p className="mt-4 text-sm font-bold leading-6 text-slate-600">
-                  Items disappear fast. If you love it, reserve it before someone else scores it.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-5 py-10">
-          <div className="mb-8 flex flex-col gap-6">
-            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">Browse</p>
-                <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">Featured Finds</h2>
+        <section className="mx-auto max-w-7xl px-5 py-8">
+          <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">Browse</p>
+              <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">Featured Finds</h2>
+            </div>
+
+            <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-[520px] lg:flex-row lg:items-center lg:justify-end">
+              <div className="relative w-full lg:max-w-md">
+                <Icon name="search" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search deals..."
+                  className="w-full rounded-2xl border-2 border-slate-200 bg-white py-4 pl-12 pr-4 text-base font-bold text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
+                />
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -406,7 +447,7 @@ export default function ShopPage() {
                   <button
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`rounded-full border px-5 py-2 text-sm font-black transition ${
+                    className={`rounded-full border px-5 py-3 text-sm font-black transition ${
                       selectedCategory === category
                         ? "border-teal-700 bg-teal-700 text-white"
                         : "border-slate-300 bg-white text-slate-800 hover:bg-teal-50"
@@ -416,16 +457,6 @@ export default function ShopPage() {
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="relative max-w-xl">
-              <Icon name="search" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search featured finds..."
-                className="w-full rounded-2xl border-2 border-slate-200 bg-white py-4 pl-12 pr-4 text-base font-bold text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
-              />
             </div>
           </div>
 
@@ -457,11 +488,6 @@ export default function ShopPage() {
                   const isCheckingOut = checkoutLoadingId === item.id;
                   const canCheckout = Boolean(item.variationId) && !isCheckingOut;
                   const savingsPercent = getSavingsPercent(item);
-                  const hasRetail =
-                    Boolean(item.retailPrice) &&
-                    Boolean(item.retailAmount) &&
-                    Boolean(item.dealsAmount) &&
-                    Number(item.retailAmount) > Number(item.dealsAmount);
 
                   return (
                     <article
@@ -483,8 +509,8 @@ export default function ShopPage() {
                           )}
 
                           {savingsPercent && (
-                            <div className="absolute left-4 top-4 rounded-full bg-pink-600 px-4 py-2 text-sm font-black text-white shadow-md">
-                              Save {savingsPercent}%
+                            <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-white shadow-md">
+                              Score {savingsPercent}% Off
                             </div>
                           )}
                         </div>
@@ -516,29 +542,7 @@ export default function ShopPage() {
                           </div>
 
                           <div className="mt-auto pt-4">
-                            <div className="rounded-2xl bg-[#fff8ef] p-4">
-                              {hasRetail && (
-                                <p className="text-sm font-bold text-slate-500">
-                                  Retail: <span className="line-through">{item.retailPrice}</span>
-                                </p>
-                              )}
-
-                              <p className="mt-1 text-xs font-black uppercase tracking-wide text-pink-600">
-                                Deals & Steals Price
-                              </p>
-
-                              <div className="flex flex-wrap items-end gap-2">
-                                <p className="text-3xl font-black text-slate-950">
-                                  {item.dealsPrice || item.price}
-                                </p>
-
-                                {savingsPercent && (
-                                  <span className="mb-1 rounded-full bg-teal-100 px-2.5 py-1 text-xs font-black text-teal-800">
-                                    You save {savingsPercent}%
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                            <DealPriceBlock item={item} />
 
                             <StockLine item={item} />
 
