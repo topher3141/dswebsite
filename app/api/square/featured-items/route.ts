@@ -36,7 +36,6 @@ function parsePriceToCents(value: unknown) {
   if (value === null || value === undefined) return null;
 
   if (typeof value === "number" && Number.isFinite(value)) {
-    // If Square/custom attribute sends 4, treat as $4.00.
     return Math.round(value * 100);
   }
 
@@ -62,22 +61,33 @@ function extractCustomAttributePriceCents(object: any, possibleNames: string[]) 
   const values = object?.custom_attribute_values || {};
   const normalizedNames = possibleNames.map(normalizeLabel);
 
-  for (const value of Object.values(values) as any[]) {
-    const label = normalizeLabel(
-      value?.name ||
-        value?.key ||
-        value?.custom_attribute_definition_id ||
-        value?.custom_attribute_definition?.name
-    );
+  for (const [attributeKey, value] of Object.entries(values) as any[]) {
+    const possibleLabels = [
+      attributeKey,
+      value?.name,
+      value?.key,
+      value?.custom_attribute_definition_id,
+      value?.custom_attribute_definition?.name,
+    ];
 
-    const matches = normalizedNames.some((name) => label.includes(name));
-    if (!matches) continue;
+    const labelMatches = possibleLabels.some((label) => {
+      const normalizedLabel = normalizeLabel(label);
+      return normalizedNames.some((name) => normalizedLabel.includes(name));
+    });
+
+    if (!labelMatches) continue;
 
     const rawValue =
       value?.number_value ??
       value?.string_value ??
+      value?.money_value?.amount ??
+      value?.amount ??
       value?.selection_uid_values?.[0] ??
       null;
+
+    if (value?.money_value?.amount && typeof value.money_value.amount === "number") {
+      return value.money_value.amount;
+    }
 
     const cents = parsePriceToCents(rawValue);
     if (cents !== null) return cents;
@@ -91,11 +101,17 @@ function findSalePriceCents(item: any, variation: any) {
   const variationData = variation?.item_variation_data || {};
 
   const directMoneyCandidates = [
+    variationData.SALE_PRICE,
+    variationData.sale_price,
+    variationData.salePrice,
     variationData.online_sale_price_money,
     variationData.sale_price_money,
     variationData.ecom_sale_price_money,
     variationData.ecommerce_sale_price_money,
     variationData.square_online_sale_price_money,
+    itemData.SALE_PRICE,
+    itemData.sale_price,
+    itemData.salePrice,
     itemData.online_sale_price_money,
     itemData.sale_price_money,
     itemData.ecom_sale_price_money,
@@ -107,12 +123,16 @@ function findSalePriceCents(item: any, variation: any) {
     if (typeof money?.amount === "number") {
       return money.amount;
     }
+
+    const parsed = parsePriceToCents(money);
+    if (parsed !== null) return parsed;
   }
 
   return (
     extractCustomAttributePriceCents(variation, [
-      "online sale price",
+      "SALE_PRICE",
       "sale price",
+      "online sale price",
       "website sale price",
       "website price",
       "online price",
@@ -120,8 +140,9 @@ function findSalePriceCents(item: any, variation: any) {
       "deals and steals price",
     ]) ??
     extractCustomAttributePriceCents(item, [
-      "online sale price",
+      "SALE_PRICE",
       "sale price",
+      "online sale price",
       "website sale price",
       "website price",
       "online price",
@@ -136,6 +157,9 @@ function findRetailPriceCents(item: any, variation: any) {
   const variationData = variation?.item_variation_data || {};
 
   const directMoneyCandidates = [
+    variationData.RETAIL_PRICE,
+    variationData.ORIGINAL_PRICE,
+    variationData.MSRP,
     variationData.retail_price_money,
     variationData.original_price_money,
     variationData.original_retail_price_money,
@@ -143,6 +167,9 @@ function findRetailPriceCents(item: any, variation: any) {
     variationData.compare_at_price_money,
     variationData.ecom_regular_price_money,
     variationData.regular_price_money,
+    itemData.RETAIL_PRICE,
+    itemData.ORIGINAL_PRICE,
+    itemData.MSRP,
     itemData.retail_price_money,
     itemData.original_price_money,
     itemData.original_retail_price_money,
@@ -156,10 +183,16 @@ function findRetailPriceCents(item: any, variation: any) {
     if (typeof money?.amount === "number") {
       return money.amount;
     }
+
+    const parsed = parsePriceToCents(money);
+    if (parsed !== null) return parsed;
   }
 
   return (
     extractCustomAttributePriceCents(variation, [
+      "RETAIL_PRICE",
+      "ORIGINAL_PRICE",
+      "MSRP",
       "retail",
       "retail price",
       "original retail",
@@ -170,6 +203,9 @@ function findRetailPriceCents(item: any, variation: any) {
       "compare price",
     ]) ??
     extractCustomAttributePriceCents(item, [
+      "RETAIL_PRICE",
+      "ORIGINAL_PRICE",
+      "MSRP",
       "retail",
       "retail price",
       "original retail",
@@ -315,9 +351,7 @@ export async function GET() {
 
         const dealsAmount =
           salePriceAmount !== null &&
-          basePriceAmount !== null &&
-          salePriceAmount > 0 &&
-          salePriceAmount < basePriceAmount
+          salePriceAmount > 0
             ? salePriceAmount
             : basePriceAmount;
 
@@ -346,6 +380,9 @@ export async function GET() {
           dealsAmount,
           retailPrice: formatMoney(centsToMoney(retailAmount, currency)),
           retailAmount,
+          squareRegularPrice: formatMoney(centsToMoney(basePriceAmount, currency)),
+          squareRegularAmount: basePriceAmount,
+          salePriceAmount,
           priceAmount: dealsAmount,
           currency,
           image: firstImageId ? imageMap[firstImageId] : null,
