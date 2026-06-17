@@ -21,6 +21,8 @@ type Product = {
   currency?: string;
   image?: string | null;
   squareUrl?: string | null;
+  stockCount?: number;
+  lowStock?: boolean;
 };
 
 function Icon({ name, className = "" }: { name: string; className?: string }) {
@@ -62,6 +64,26 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
   }
 
   return null;
+}
+
+function StockBadge({ item }: { item: Product }) {
+  const stockCount = item.stockCount || 0;
+
+  if (stockCount <= 0) return null;
+
+  const isLowStock = item.lowStock || stockCount <= 3;
+
+  return (
+    <div
+      className={`mt-4 rounded-xl px-4 py-3 text-sm font-black ${
+        isLowStock
+          ? "bg-pink-100 text-pink-700"
+          : "bg-teal-100 text-teal-800"
+      }`}
+    >
+      {isLowStock ? `⚠️ Only ${stockCount} left in stock` : `✅ ${stockCount} left in stock`}
+    </div>
+  );
 }
 
 export default function ShopPage() {
@@ -223,7 +245,7 @@ export default function ShopPage() {
               <div className="mt-8 flex flex-wrap gap-3 text-sm font-black text-slate-700">
                 <span className="rounded-full bg-[#fff8ef] px-4 py-2">📍 Pickup in Glen Burnie</span>
                 <span className="rounded-full bg-[#fff8ef] px-4 py-2">🔄 Inventory updates weekly</span>
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">📦 Limited quantities</span>
+                <span className="rounded-full bg-[#fff8ef] px-4 py-2">📦 Only items with 2+ available show here</span>
               </div>
             </div>
           </div>
@@ -263,7 +285,7 @@ export default function ShopPage() {
           {isLoading && (
             <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
               <h3 className="text-2xl font-black">Loading featured finds...</h3>
-              <p className="mt-2 text-slate-600">Pulling the latest items from Square.</p>
+              <p className="mt-2 text-slate-600">Pulling the latest items and inventory counts from Square.</p>
             </div>
           )}
 
@@ -329,9 +351,11 @@ export default function ShopPage() {
 
                             <p className="text-3xl font-black text-slate-950">{item.price}</p>
 
+                            <StockBadge item={item} />
+
                             <div className="mt-4 space-y-1 text-sm font-bold text-slate-600">
                               <p>✅ Pickup Available</p>
-                              <p>✅ Limited Quantity</p>
+                              <p>✅ Local pickup only</p>
                             </div>
 
                             <button
@@ -355,8 +379,10 @@ export default function ShopPage() {
 
               {visibleProducts.length === 0 && (
                 <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
-                  <h3 className="text-2xl font-black">No items found.</h3>
-                  <p className="mt-2 text-slate-600">Try a different category or check back soon.</p>
+                  <h3 className="text-2xl font-black">No items currently available.</h3>
+                  <p className="mt-2 text-slate-600">
+                    Featured items only show here when at least 2 are available in Square inventory.
+                  </p>
                 </div>
               )}
             </>
