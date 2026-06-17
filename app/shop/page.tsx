@@ -1,550 +1,391 @@
-"use client";
+import { NextResponse } from "next/server";
 
-import React, { useEffect, useMemo, useState } from "react";
+export const dynamic = "force-dynamic";
 
-const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
-const LOYALTY_URL = "https://app.squareup.com/loyalty/ML6ZZS746Y0MJ";
-const MAP_URL = "https://maps.app.goo.gl/X5aRKYCCKWmEKzUD6";
-const INVOICE_URL = "https://www.retailogic.dev/";
-const LOGO_URL = "https://i.imgur.com/euamaJ6.png";
+const SQUARE_BASE_URL = "https://connect.squareup.com";
+const SQUARE_API_VERSION = process.env.SQUARE_API_VERSION || "2026-05-20";
+const LOW_STOCK_THRESHOLD = 3;
 
-const CATEGORIES = ["All"];
-
-type Product = {
-  id: string;
-  variationId?: string | null;
-  name: string;
-  description?: string;
-  price: string;
-  dealsPrice?: string;
-  dealsAmount?: number | null;
-  retailPrice?: string;
-  retailAmount?: number | null;
-  priceAmount?: number | null;
+type SquareMoney = {
+  amount?: number;
   currency?: string;
-  image?: string | null;
-  squareUrl?: string | null;
-  stockCount?: number;
-  lowStock?: boolean;
 };
 
-function Icon({ name, className = "" }: { name: string; className?: string }) {
-  const common = `h-6 w-6 ${className}`;
+function formatMoney(money?: SquareMoney | null) {
+  if (!money || typeof money.amount !== "number") return "";
 
-  if (name === "facebook") {
-    return (
-      <svg className={common} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M14 8.5V7.2c0-.7.2-1.2 1.2-1.2H17V3h-2.7C11.6 3 10 4.6 10 7v1.5H8v3h2V21h4v-9.5h2.7l.3-3H14z" />
-      </svg>
-    );
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: money.currency || "USD",
+  }).format(money.amount / 100);
+}
+
+function centsToMoney(amount?: number | null, currency = "USD"): SquareMoney | null {
+  if (typeof amount !== "number" || !Number.isFinite(amount)) return null;
+  return { amount, currency };
+}
+
+function parseSquareQuantity(quantity?: string | number | null) {
+  if (quantity === null || quantity === undefined) return 0;
+
+  const parsed = Number(quantity);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parsePriceToCents(value: unknown) {
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    // If Square/custom attribute sends 4, treat as $4.00.
+    return Math.round(value * 100);
   }
 
-  if (name === "arrow") {
-    return (
-      <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M5 12h14" />
-        <path d="M13 6l6 6-6 6" />
-      </svg>
-    );
-  }
+  if (typeof value === "string") {
+    const cleaned = value.replace(/[^0-9.]/g, "");
+    const parsed = Number(cleaned);
 
-  if (name === "map") {
-    return (
-      <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11z" />
-        <circle cx="12" cy="10" r="2.5" />
-      </svg>
-    );
-  }
-
-  if (name === "user") {
-    return (
-      <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21c1.8-4.2 5-6 8-6s6.2 1.8 8 6" />
-      </svg>
-    );
-  }
-
-  if (name === "close") {
-    return (
-      <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M18 6 6 18" />
-        <path d="m6 6 12 12" />
-      </svg>
-    );
+    if (Number.isFinite(parsed)) {
+      return Math.round(parsed * 100);
+    }
   }
 
   return null;
 }
 
-function StockLine({ item }: { item: Product }) {
-  const stockCount = item.stockCount || 0;
-
-  if (stockCount <= 0) return null;
-
-  const isLowStock = item.lowStock || stockCount <= 3;
-
-  return (
-    <p
-      className={`mt-3 text-sm font-black ${
-        isLowStock ? "text-pink-600" : "text-teal-700"
-      }`}
-    >
-      {isLowStock ? `Only ${stockCount} left in stock` : `${stockCount} left in stock`}
-    </p>
-  );
+function normalizeLabel(value: unknown) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
-function ProductDescriptionModal({
-  product,
-  onClose,
-}: {
-  product: Product | null;
-  onClose: () => void;
-}) {
-  if (!product) return null;
+function extractCustomAttributePriceCents(object: any, possibleNames: string[]) {
+  const values = object?.custom_attribute_values || {};
+  const normalizedNames = possibleNames.map(normalizeLabel);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-5 py-8">
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-auto rounded-[2rem] bg-white p-6 shadow-2xl md:p-8">
-        <button
-          onClick={onClose}
-          className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
-          aria-label="Close description"
-        >
-          <Icon name="close" className="h-5 w-5" />
-        </button>
+  for (const value of Object.values(values) as any[]) {
+    const label = normalizeLabel(
+      value?.name ||
+        value?.key ||
+        value?.custom_attribute_definition_id ||
+        value?.custom_attribute_definition?.name
+    );
 
-        {product.image && (
-          <img
-            src={product.image}
-            alt={product.name}
-            className="mb-6 h-64 w-full rounded-[1.5rem] object-cover"
-          />
-        )}
+    const matches = normalizedNames.some((name) => label.includes(name));
+    if (!matches) continue;
 
-        <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
-          Item details
-        </p>
+    const rawValue =
+      value?.number_value ??
+      value?.string_value ??
+      value?.selection_uid_values?.[0] ??
+      null;
 
-        <h3 className="mt-3 pr-10 text-3xl font-black leading-tight text-slate-950">
-          {product.name}
-        </h3>
+    const cents = parsePriceToCents(rawValue);
+    if (cents !== null) return cents;
+  }
 
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          {product.retailPrice && product.retailAmount && product.dealsAmount && product.retailAmount > product.dealsAmount && (
-            <p className="text-base font-bold text-slate-500">
-              Retail: <span className="line-through">{product.retailPrice}</span>
-            </p>
-          )}
-
-          <p className="text-3xl font-black text-slate-950">
-            {product.dealsPrice || product.price}
-          </p>
-        </div>
-
-        <StockLine item={product} />
-
-        <p className="mt-6 whitespace-pre-line text-base leading-8 text-slate-700">
-          {product.description || "More details available in store."}
-        </p>
-      </div>
-    </div>
-  );
+  return null;
 }
 
-export default function ShopPage() {
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [checkoutError, setCheckoutError] = useState("");
-  const [checkoutLoadingId, setCheckoutLoadingId] = useState<string | null>(null);
+function findSalePriceCents(item: any, variation: any) {
+  const itemData = item?.item_data || {};
+  const variationData = variation?.item_variation_data || {};
 
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        const response = await fetch("/api/square/featured-items", {
-          cache: "no-store",
-        });
+  const directMoneyCandidates = [
+    variationData.online_sale_price_money,
+    variationData.sale_price_money,
+    variationData.ecom_sale_price_money,
+    variationData.ecommerce_sale_price_money,
+    variationData.square_online_sale_price_money,
+    itemData.online_sale_price_money,
+    itemData.sale_price_money,
+    itemData.ecom_sale_price_money,
+    itemData.ecommerce_sale_price_money,
+    itemData.square_online_sale_price_money,
+  ];
 
-        const contentType = response.headers.get("content-type") || "";
-
-        if (!contentType.includes("application/json")) {
-          throw new Error(
-            `Featured items route returned ${response.status}. Check /api/square/featured-items.`
-          );
-        }
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data?.error || "Unable to load products");
-        }
-
-        setProducts(data.products || []);
-      } catch (err: any) {
-        setError(err.message || "Unable to load products");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadProducts();
-  }, []);
-
-  const visibleProducts = useMemo(() => {
-    if (selectedCategory === "All") return products;
-    return products;
-  }, [selectedCategory, products]);
-
-  async function handleCheckout(item: Product) {
-    try {
-      setCheckoutError("");
-
-      if (!item.variationId) {
-        throw new Error("This item is missing a Square variation ID.");
-      }
-
-      setCheckoutLoadingId(item.id);
-
-      const response = await fetch("/api/square/create-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          variationId: item.variationId,
-          itemName: item.name,
-        }),
-      });
-
-      const contentType = response.headers.get("content-type") || "";
-
-      if (!contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Non-JSON checkout response:", text);
-
-        throw new Error(
-          `Checkout route returned ${response.status}. This means /api/square/create-checkout is not being found or is returning an HTML error page.`
-        );
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Unable to create checkout");
-      }
-
-      if (!data.checkoutUrl) {
-        throw new Error("Square did not return a checkout link.");
-      }
-
-      window.open(data.checkoutUrl, "_blank", "noopener,noreferrer");
-    } catch (err: any) {
-      setCheckoutError(err.message || "Unable to start checkout");
-    } finally {
-      setCheckoutLoadingId(null);
+  for (const money of directMoneyCandidates) {
+    if (typeof money?.amount === "number") {
+      return money.amount;
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#f7efe5] text-slate-900">
-      <ProductDescriptionModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
-
-      <header className="sticky top-0 z-40 border-b-4 border-pink-500 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
-          <a href="/" className="inline-flex items-center gap-3">
-            <img src={LOGO_URL} alt="Deals & Steals logo" className="h-11 w-auto object-contain md:h-12 lg:h-14" />
-          </a>
-
-          <nav className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-700 md:gap-6">
-            <a href="/#difference" className="hover:text-pink-600">Why Us</a>
-            <a href="/#hours" className="hover:text-pink-600">Hours</a>
-            <a href="/#visit" className="hover:text-pink-600">Visit Us</a>
-            <a href="/shop" className="font-black text-pink-600">Shop</a>
-
-            <a
-              href={INVOICE_URL}
-              target="_blank"
-              rel="noreferrer"
-              title="Click here to view and pay your weekly invoice."
-              className="rounded-full bg-pink-600 px-4 py-2 text-white shadow-sm transition hover:bg-pink-700"
-            >
-              Pay Invoice
-            </a>
-
-            <a
-              href={LOYALTY_URL}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Join loyalty rewards"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-sky-100 bg-sky-50 text-slate-700 transition hover:border-sky-200 hover:bg-sky-100 hover:text-sky-700"
-            >
-              <Icon name="user" className="h-5 w-5" />
-            </a>
-          </nav>
-        </div>
-      </header>
-
-      <main>
-        <section className="relative overflow-hidden bg-white">
-          <div className="absolute inset-y-0 right-0 hidden w-[48%] bg-gradient-to-l from-[#ffd9ea] via-[#fff1f7] to-transparent lg:block" />
-          <div className="absolute -right-10 top-10 hidden h-96 w-96 rounded-full bg-pink-200/70 blur-3xl lg:block" />
-          <div className="absolute bottom-6 right-24 hidden h-64 w-64 rounded-full bg-pink-100/45 blur-3xl lg:block" />
-
-          <div className="relative mx-auto max-w-7xl px-5 py-14 lg:py-20">
-            <div className="max-w-4xl">
-              <div className="mb-5 inline-flex items-center gap-3 rounded-full bg-teal-100 px-5 py-2 text-sm font-black uppercase tracking-wide text-slate-950 shadow-sm">
-                <span className="relative flex h-3 w-3">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-teal-600"></span>
-                </span>
-                <span>Online Shop</span>
-              </div>
-
-              <h1 className="text-5xl font-black leading-none tracking-tight text-slate-950 md:text-7xl">
-                Shop a curated selection of our best deals.
-              </h1>
-
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700 md:text-xl">
-                These are hand-picked higher-value items available for local pickup. Inventory changes often, so if you see something you love, don’t wait.
-              </p>
-
-              <div className="mt-8 flex flex-wrap gap-3 text-sm font-black text-slate-700">
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">📍 Pickup in Glen Burnie</span>
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">🔄 Inventory updates weekly</span>
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">📦 Only items with 2+ available show here</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-7xl px-5 py-10">
-          <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">Browse</p>
-              <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">Featured Finds</h2>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`rounded-full border px-5 py-2 text-sm font-black transition ${
-                    selectedCategory === category
-                      ? "border-teal-700 bg-teal-700 text-white"
-                      : "border-slate-300 bg-white text-slate-800 hover:bg-teal-50"
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {checkoutError && (
-            <div className="mb-6 rounded-[1.5rem] border border-pink-200 bg-white p-5 text-pink-700">
-              <p className="font-black">Checkout error</p>
-              <p className="mt-1 text-sm">{checkoutError}</p>
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
-              <h3 className="text-2xl font-black">Loading featured finds...</h3>
-              <p className="mt-2 text-slate-600">Pulling the latest items and inventory counts from Square.</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-[2rem] border border-pink-200 bg-white p-10 text-center">
-              <h3 className="text-2xl font-black text-pink-600">Unable to load items.</h3>
-              <p className="mt-2 text-slate-600">{error}</p>
-            </div>
-          )}
-
-          {!isLoading && !error && (
-            <>
-              <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {visibleProducts.map((item) => {
-                  const isCheckingOut = checkoutLoadingId === item.id;
-                  const canCheckout = Boolean(item.variationId) && !isCheckingOut;
-                  const hasRetail =
-                    Boolean(item.retailPrice) &&
-                    Boolean(item.retailAmount) &&
-                    Boolean(item.dealsAmount) &&
-                    Number(item.retailAmount) > Number(item.dealsAmount);
-
-                  return (
-                    <article
-                      key={item.id}
-                      className="flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                    >
-                      <div className="flex w-full flex-col">
-                        <div className="relative">
-                          {item.image ? (
-                            <img src={item.image} alt={item.name} className="h-56 w-full object-cover" />
-                          ) : (
-                            <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
-                              Image Coming Soon
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-1 flex-col p-5">
-                          <h3 className="min-h-[4.8rem] text-xl font-black leading-tight text-slate-950">
-                            {item.name}
-                          </h3>
-
-                          <div className="mt-3 min-h-[4.5rem]">
-                            {item.description ? (
-                              <>
-                                <p className="line-clamp-3 text-sm leading-6 text-slate-600">
-                                  {item.description}
-                                </p>
-
-                                <button
-                                  onClick={() => setSelectedProduct(item)}
-                                  className="mt-2 text-sm font-black text-pink-600 transition hover:text-pink-700"
-                                >
-                                  View full description
-                                </button>
-                              </>
-                            ) : (
-                              <p className="text-sm leading-6 text-slate-400">
-                                More details available in store.
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="mt-auto pt-4">
-                            {hasRetail && (
-                              <p className="text-sm font-bold text-slate-500">
-                                Retail: <span className="line-through">{item.retailPrice}</span>
-                              </p>
-                            )}
-
-                            <p className="mt-1 text-xs font-black uppercase tracking-wide text-pink-600">
-                              Deals & Steals Price
-                            </p>
-
-                            <p className="text-3xl font-black text-slate-950">
-                              {item.dealsPrice || item.price}
-                            </p>
-
-                            <StockLine item={item} />
-
-                            <p className="mt-4 text-sm font-bold text-slate-600">
-                              Local pickup only
-                            </p>
-
-                            <button
-                              onClick={() => handleCheckout(item)}
-                              disabled={!canCheckout}
-                              className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 font-black transition ${
-                                canCheckout
-                                  ? "bg-teal-700 text-white hover:bg-teal-800"
-                                  : "cursor-not-allowed bg-slate-300 text-slate-600"
-                              }`}
-                            >
-                              {isCheckingOut ? "Opening Checkout..." : "Reserve & Pay"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-
-              {visibleProducts.length === 0 && (
-                <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
-                  <h3 className="text-2xl font-black">No items currently available.</h3>
-                  <p className="mt-2 text-slate-600">
-                    Featured items only show here when at least 2 are available in Square inventory.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-        </section>
-
-        <section className="bg-pink-600 px-5 py-14 text-white">
-          <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[1fr_.8fr] md:items-center">
-            <div>
-              <p className="font-black uppercase tracking-[0.25em] text-pink-100">The treasure hunt continues</p>
-              <h2 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
-                Want first access to more deals?
-              </h2>
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-pink-50">
-                Our shop page is just a small sample. Join the Facebook group for weekly posts, live sales, and fresh finds.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
-              <a
-                href={FACEBOOK_GROUP_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-xl bg-white px-7 py-4 font-black text-pink-700 shadow-md transition hover:bg-slate-100"
-              >
-                Join Facebook Group <Icon name="facebook" className="ml-2 h-5 w-5" />
-              </a>
-              <a
-                href={MAP_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-xl border-2 border-white px-7 py-4 font-black text-white transition hover:bg-white/10"
-              >
-                Visit the Store <Icon name="map" className="ml-2 h-5 w-5" />
-              </a>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t-4 border-slate-950 bg-white px-5 py-10 text-slate-700">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-3">
-          <div>
-            <p className="text-lg font-black text-slate-950">Deals & Steals</p>
-            <p className="mt-3 text-sm font-bold tracking-[0.18em] text-pink-600">shop small, SAVE BIG.</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-pink-600">Hours</p>
-            <div className="mt-3 flex flex-col gap-2 text-sm font-bold">
-              <p>Thursday: 1 PM - 7 PM</p>
-              <p>Friday: 1 PM - 7 PM</p>
-              <p>Saturday: 11 AM - 3 PM</p>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-sky-600">Connect</p>
-            <div className="mt-3 flex flex-col gap-3 text-sm font-bold">
-              <a href={FACEBOOK_GROUP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-pink-600">
-                <Icon name="facebook" className="h-3.5 w-3.5" /> Join Our Facebook Group
-              </a>
-              <a href={LOYALTY_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-pink-600">
-                <Icon name="user" className="h-3.5 w-3.5" /> Join Loyalty Rewards
-              </a>
-              <a href={MAP_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-pink-600">
-                <Icon name="map" className="h-3.5 w-3.5" /> Get Directions
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="mx-auto mt-8 max-w-7xl border-t border-slate-200 pt-5 text-center text-sm font-medium text-slate-500">
-          <a href={MAP_URL} target="_blank" rel="noreferrer" className="transition hover:text-pink-600">
-            510 McCormick Drive | Suite B | Glen Burnie, MD 21061
-          </a>
-        </div>
-      </footer>
-    </div>
+    extractCustomAttributePriceCents(variation, [
+      "online sale price",
+      "sale price",
+      "website sale price",
+      "website price",
+      "online price",
+      "deals price",
+      "deals and steals price",
+    ]) ??
+    extractCustomAttributePriceCents(item, [
+      "online sale price",
+      "sale price",
+      "website sale price",
+      "website price",
+      "online price",
+      "deals price",
+      "deals and steals price",
+    ])
   );
+}
+
+function findRetailPriceCents(item: any, variation: any) {
+  const itemData = item?.item_data || {};
+  const variationData = variation?.item_variation_data || {};
+
+  const directMoneyCandidates = [
+    variationData.retail_price_money,
+    variationData.original_price_money,
+    variationData.original_retail_price_money,
+    variationData.msrp_money,
+    variationData.compare_at_price_money,
+    variationData.ecom_regular_price_money,
+    variationData.regular_price_money,
+    itemData.retail_price_money,
+    itemData.original_price_money,
+    itemData.original_retail_price_money,
+    itemData.msrp_money,
+    itemData.compare_at_price_money,
+    itemData.ecom_regular_price_money,
+    itemData.regular_price_money,
+  ];
+
+  for (const money of directMoneyCandidates) {
+    if (typeof money?.amount === "number") {
+      return money.amount;
+    }
+  }
+
+  return (
+    extractCustomAttributePriceCents(variation, [
+      "retail",
+      "retail price",
+      "original retail",
+      "original retail price",
+      "original price",
+      "msrp",
+      "compare at price",
+      "compare price",
+    ]) ??
+    extractCustomAttributePriceCents(item, [
+      "retail",
+      "retail price",
+      "original retail",
+      "original retail price",
+      "original price",
+      "msrp",
+      "compare at price",
+      "compare price",
+    ])
+  );
+}
+
+async function squarePost(path: string, body: unknown) {
+  const accessToken = process.env.SQUARE_ACCESS_TOKEN;
+
+  if (!accessToken) {
+    throw new Error("Missing SQUARE_ACCESS_TOKEN");
+  }
+
+  const response = await fetch(`${SQUARE_BASE_URL}${path}`, {
+    method: "POST",
+    headers: {
+      "Square-Version": SQUARE_API_VERSION,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error("Square API error:", data);
+    throw new Error(data?.errors?.[0]?.detail || "Square API request failed");
+  }
+
+  return data;
+}
+
+async function getInventoryCounts(variationIds: string[], locationId: string) {
+  if (variationIds.length === 0) return {};
+
+  const inventoryByVariationId: Record<string, number> = {};
+  let cursor: string | undefined;
+
+  do {
+    const inventoryResponse = await squarePost("/v2/inventory/counts/batch-retrieve", {
+      catalog_object_ids: variationIds,
+      location_ids: [locationId],
+      states: ["IN_STOCK"],
+      cursor,
+    });
+
+    const counts = inventoryResponse.counts || [];
+
+    counts.forEach((count: any) => {
+      const variationId = count.catalog_object_id;
+      const quantity = parseSquareQuantity(count.quantity);
+
+      if (!variationId) return;
+
+      inventoryByVariationId[variationId] =
+        (inventoryByVariationId[variationId] || 0) + quantity;
+    });
+
+    cursor = inventoryResponse.cursor;
+  } while (cursor);
+
+  return inventoryByVariationId;
+}
+
+export async function GET() {
+  try {
+    const locationId = process.env.SQUARE_LOCATION_ID;
+    const categoryId = process.env.SQUARE_FEATURED_CATEGORY_ID;
+
+    if (!locationId) {
+      return NextResponse.json(
+        { error: "Missing SQUARE_LOCATION_ID" },
+        { status: 500 }
+      );
+    }
+
+    if (!categoryId) {
+      return NextResponse.json(
+        { error: "Missing SQUARE_FEATURED_CATEGORY_ID" },
+        { status: 500 }
+      );
+    }
+
+    const catalogResponse = await squarePost("/v2/catalog/search-catalog-items", {
+      category_ids: [categoryId],
+      enabled_location_ids: [locationId],
+      product_types: ["REGULAR"],
+      limit: 100,
+    });
+
+    const items = catalogResponse.items || [];
+
+    const imageIds = Array.from(
+      new Set(items.flatMap((item: any) => item.item_data?.image_ids || []))
+    );
+
+    let imageMap: Record<string, string> = {};
+
+    if (imageIds.length > 0) {
+      const imageResponse = await squarePost("/v2/catalog/batch-retrieve", {
+        object_ids: imageIds,
+        include_related_objects: false,
+      });
+
+      imageMap = (imageResponse.objects || []).reduce(
+        (map: Record<string, string>, object: any) => {
+          if (object.type === "IMAGE" && object.image_data?.url) {
+            map[object.id] = object.image_data.url;
+          }
+          return map;
+        },
+        {}
+      );
+    }
+
+    const rawProducts = items
+      .map((item: any) => {
+        const itemData = item.item_data || {};
+        const variations = itemData.variations || [];
+
+        const firstPricedVariation = variations.find(
+          (variation: any) =>
+            variation.item_variation_data?.price_money?.amount != null
+        );
+
+        if (!firstPricedVariation) return null;
+
+        const variationData = firstPricedVariation.item_variation_data || {};
+        const basePriceMoney = variationData.price_money;
+        const currency = basePriceMoney?.currency || "USD";
+        const basePriceAmount = basePriceMoney?.amount || null;
+
+        const salePriceAmount = findSalePriceCents(item, firstPricedVariation);
+        const customRetailAmount = findRetailPriceCents(item, firstPricedVariation);
+
+        const dealsAmount =
+          salePriceAmount !== null &&
+          basePriceAmount !== null &&
+          salePriceAmount > 0 &&
+          salePriceAmount < basePriceAmount
+            ? salePriceAmount
+            : basePriceAmount;
+
+        const retailAmount =
+          customRetailAmount !== null && customRetailAmount > 0
+            ? customRetailAmount
+            : salePriceAmount !== null &&
+                basePriceAmount !== null &&
+                salePriceAmount > 0 &&
+                salePriceAmount < basePriceAmount
+              ? basePriceAmount
+              : null;
+
+        const firstImageId = itemData.image_ids?.[0];
+
+        return {
+          id: item.id,
+          variationId: firstPricedVariation.id || null,
+          name: itemData.name || "Untitled Item",
+          description:
+            itemData.description_plaintext ||
+            itemData.description ||
+            "",
+          price: formatMoney(centsToMoney(dealsAmount, currency)),
+          dealsPrice: formatMoney(centsToMoney(dealsAmount, currency)),
+          dealsAmount,
+          retailPrice: formatMoney(centsToMoney(retailAmount, currency)),
+          retailAmount,
+          priceAmount: dealsAmount,
+          currency,
+          image: firstImageId ? imageMap[firstImageId] : null,
+          squareUrl: null,
+        };
+      })
+      .filter((item: any) => item && item.priceAmount !== null && item.variationId);
+
+    const variationIds = rawProducts
+      .map((item: any) => item.variationId)
+      .filter(Boolean);
+
+    const inventoryByVariationId = await getInventoryCounts(variationIds, locationId);
+
+    const products = rawProducts
+      .map((item: any) => {
+        const stockCount = inventoryByVariationId[item.variationId] || 0;
+
+        return {
+          ...item,
+          stockCount,
+          lowStock: stockCount > 0 && stockCount <= LOW_STOCK_THRESHOLD,
+        };
+      })
+      .filter((item: any) => item.stockCount > 0);
+
+    return NextResponse.json({
+      products,
+      count: products.length,
+      hiddenBecauseOutOfStock: rawProducts.length - products.length,
+      lowStockThreshold: LOW_STOCK_THRESHOLD,
+    });
+  } catch (error: any) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        error: error.message || "Unable to load Square items",
+      },
+      { status: 500 }
+    );
+  }
 }
