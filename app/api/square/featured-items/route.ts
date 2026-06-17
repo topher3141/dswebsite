@@ -11,7 +11,7 @@ type SquareMoney = {
   currency?: string;
 };
 
-function formatMoney(money?: SquareMoney) {
+function formatMoney(money?: SquareMoney | null) {
   if (!money || typeof money.amount !== "number") return "";
 
   return new Intl.NumberFormat("en-US", {
@@ -20,11 +20,126 @@ function formatMoney(money?: SquareMoney) {
   }).format(money.amount / 100);
 }
 
+function centsToMoney(amount?: number | null, currency = "USD"): SquareMoney | null {
+  if (typeof amount !== "number" || !Number.isFinite(amount)) return null;
+  return { amount, currency };
+}
+
 function parseSquareQuantity(quantity?: string | number | null) {
   if (quantity === null || quantity === undefined) return 0;
 
   const parsed = Number(quantity);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parsePriceToCents(value: unknown) {
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.round(value * 100);
+  }
+
+  if (typeof value === "string") {
+    const cleaned = value.replace(/[^0-9.]/g, "");
+    const parsed = Number(cleaned);
+
+    if (Number.isFinite(parsed)) {
+      return Math.round(parsed * 100);
+    }
+  }
+
+  return null;
+}
+
+function normalizeLabel(value: unknown) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function extractCustomAttributePriceCents(object: any, possibleNames: string[]) {
+  const values = object?.custom_attribute_values || {};
+  const normalizedNames = possibleNames.map(normalizeLabel);
+
+  for (const value of Object.values(values) as any[]) {
+    const label = normalizeLabel(value?.name || value?.key || value?.custom_attribute_definition_id);
+
+    const matches = normalizedNames.some((name) => label.includes(name));
+    if (!matches) continue;
+
+    const rawValue =
+      value?.number_value ??
+      value?.string_value ??
+      value?.selection_uid_values?.[0] ??
+      null;
+
+    const cents = parsePriceToCents(rawValue);
+    if (cents !== null) return cents;
+  }
+
+  return null;
+}
+
+function findSalePriceCents(item: any, variation: any) {
+  const itemData = item?.item_data || {};
+  const variationData = variation?.item_variation_data || {};
+
+  const directMoneyCandidates = [
+    variationData.online_sale_price_money,
+    variationData.sale_price_money,
+    variationData.ecom_sale_price_money,
+    itemData.online_sale_price_money,
+    itemData.sale_price_money,
+    itemData.ecom_sale_price_money,
+  ];
+
+  for (const money of directMoneyCandidates) {
+    if (typeof money?.amount === "number") {
+      return money.amount;
+    }
+  }
+
+  return (
+    extractCustomAttributePriceCents(variation, [
+      "online sale price",
+      "sale price",
+      "website sale price",
+      "website price",
+      "online price",
+      "deals price",
+      "deals and steals price",
+    ]) ??
+    extractCustomAttributePriceCents(item, [
+      "online sale price",
+      "sale price",
+      "website sale price",
+      "website price",
+      "online price",
+      "deals price",
+      "deals and steals price",
+    ])
+  );
+}
+
+function findRetailPriceCents(item: any, variation: any) {
+  return (
+    extractCustomAttributePriceCents(variation, [
+      "retail",
+      "retail price",
+      "original retail",
+      "original retail price",
+      "msrp",
+      "compare at price",
+    ]) ??
+    extractCustomAttributePriceCents(item, [
+      "retail",
+      "retail price",
+      "original retail",
+      "original retail price",
+      "msrp",
+      "compare at price",
+    ])
+  );
 }
 
 async function squarePost(path: string, body: unknown) {
@@ -148,27 +263,56 @@ export async function GET() {
             variation.item_variation_data?.price_money?.amount != null
         );
 
-        const variationData = firstPricedVariation?.item_variation_data || {};
-        const priceMoney = variationData.price_money;
+        if (!firstPricedVariation) return null;
+
+        const variationData = firstPricedVariation.item_variation_data || {};
+        const basePriceMoney = variationData.price_money;
+        const currency = basePriceMoney?.currency || "USD";
+        const basePriceAmount = basePriceMoney?.amount || null;
+
+        const salePriceAmount = findSalePriceCents(item, firstPricedVariation);
+        const customRetailAmount = findRetailPriceCents(item, firstPricedVariation);
+
+        const dealsAmount =
+          salePriceAmount !== null &&
+          basePriceAmount !== null &&
+          salePriceAmount > 0 &&
+          salePriceAmount < basePriceAmount
+            ? salePriceAmount
+            : basePriceAmount;
+
+        const retailAmount =
+          customRetailAmount !== null && customRetailAmount > 0
+            ? customRetailAmount
+            : salePriceAmount !== null &&
+                basePriceAmount !== null &&
+                salePriceAmount > 0 &&
+                salePriceAmount < basePriceAmount
+              ? basePriceAmount
+              : null;
+
         const firstImageId = itemData.image_ids?.[0];
 
         return {
           id: item.id,
-          variationId: firstPricedVariation?.id || null,
+          variationId: firstPricedVariation.id || null,
           name: itemData.name || "Untitled Item",
           description:
             itemData.description_plaintext ||
             itemData.description ||
             "",
-          category: "Featured Find",
-          price: formatMoney(priceMoney),
-          priceAmount: priceMoney?.amount || null,
-          currency: priceMoney?.currency || "USD",
+          price: formatMoney(centsToMoney(dealsAmount, currency)),
+          dealsPrice: formatMoney(centsToMoney(dealsAmount, currency)),
+          dealsAmount,
+          retailPrice: formatMoney(centsToMoney(retailAmount, currency)),
+          retailAmount,
+          priceAmount: dealsAmount,
+          currency,
           image: firstImageId ? imageMap[firstImageId] : null,
           squareUrl: null,
         };
       })
-      .filter((item: any) => item.priceAmount !== null && item.variationId);
+      .filter((item: any) => item && item.priceAmount !== null && item.variationId);
 
     const variationIds = rawProducts
       .map((item: any) => item.variationId)
