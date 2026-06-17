@@ -27,6 +27,7 @@ function centsToMoney(amount?: number | null, currency = "USD"): SquareMoney | n
 
 function parseSquareQuantity(quantity?: string | number | null) {
   if (quantity === null || quantity === undefined) return 0;
+
   const parsed = Number(quantity);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -94,67 +95,23 @@ function extractCustomAttributePriceCents(object: any, possibleNames: string[]) 
   return null;
 }
 
-function findSalePriceCents(item: any, variation: any) {
+function findMsrpCents(item: any, variation: any) {
   const itemData = item?.item_data || {};
   const variationData = variation?.item_variation_data || {};
 
   const directCandidates = [
-    variationData.SALE_PRICE,
-    variationData.sale_price,
-    variationData.salePrice,
-    variationData.online_sale_price_money,
-    variationData.sale_price_money,
-    itemData.SALE_PRICE,
-    itemData.sale_price,
-    itemData.salePrice,
-    itemData.online_sale_price_money,
-    itemData.sale_price_money,
-  ];
-
-  for (const candidate of directCandidates) {
-    if (typeof candidate?.amount === "number") return candidate.amount;
-
-    const parsed = parsePriceToCents(candidate);
-    if (parsed !== null) return parsed;
-  }
-
-  return (
-    extractCustomAttributePriceCents(variation, [
-      "SALE_PRICE",
-      "sale price",
-      "online sale price",
-      "website sale price",
-      "website price",
-      "online price",
-      "deals price",
-      "deals and steals price",
-    ]) ??
-    extractCustomAttributePriceCents(item, [
-      "SALE_PRICE",
-      "sale price",
-      "online sale price",
-      "website sale price",
-      "website price",
-      "online price",
-      "deals price",
-      "deals and steals price",
-    ])
-  );
-}
-
-function findRetailPriceCents(item: any, variation: any) {
-  const itemData = item?.item_data || {};
-  const variationData = variation?.item_variation_data || {};
-
-  const directCandidates = [
-    variationData.RETAIL_PRICE,
     variationData.MSRP,
-    variationData.ORIGINAL_RETAIL_PRICE,
+    variationData.msrp,
+    variationData.msrp_money,
+    variationData.RETAIL_PRICE,
     variationData.ORIGINAL_PRICE,
-    itemData.RETAIL_PRICE,
+    variationData.ORIGINAL_RETAIL_PRICE,
     itemData.MSRP,
-    itemData.ORIGINAL_RETAIL_PRICE,
+    itemData.msrp,
+    itemData.msrp_money,
+    itemData.RETAIL_PRICE,
     itemData.ORIGINAL_PRICE,
+    itemData.ORIGINAL_RETAIL_PRICE,
   ];
 
   for (const candidate of directCandidates) {
@@ -166,28 +123,22 @@ function findRetailPriceCents(item: any, variation: any) {
 
   return (
     extractCustomAttributePriceCents(variation, [
-      "RETAIL_PRICE",
       "MSRP",
-      "ORIGINAL_RETAIL_PRICE",
-      "ORIGINAL_PRICE",
+      "msrp",
       "retail price",
       "original retail",
       "original retail price",
       "original price",
-      "msrp",
       "compare at price",
       "compare price",
     ]) ??
     extractCustomAttributePriceCents(item, [
-      "RETAIL_PRICE",
       "MSRP",
-      "ORIGINAL_RETAIL_PRICE",
-      "ORIGINAL_PRICE",
+      "msrp",
       "retail price",
       "original retail",
       "original retail price",
       "original price",
-      "msrp",
       "compare at price",
       "compare price",
     ])
@@ -320,15 +271,8 @@ export async function GET() {
         const variationData = firstPricedVariation.item_variation_data || {};
         const squarePriceMoney = variationData.price_money;
         const currency = squarePriceMoney?.currency || "USD";
-        const squarePriceAmount = squarePriceMoney?.amount || null;
-
-        const salePriceAmount = findSalePriceCents(item, firstPricedVariation);
-        const retailAmount = findRetailPriceCents(item, firstPricedVariation);
-
-        const dealsAmount =
-          salePriceAmount !== null && salePriceAmount > 0
-            ? salePriceAmount
-            : squarePriceAmount;
+        const dealsAmount = squarePriceMoney?.amount ?? null;
+        const msrpAmount = findMsrpCents(item, firstPricedVariation);
 
         const firstImageId = itemData.image_ids?.[0];
 
@@ -340,14 +284,18 @@ export async function GET() {
             itemData.description_plaintext ||
             itemData.description ||
             "",
+
+          // The stable Square catalog price is the actual sale/check-out price.
           price: formatMoney(centsToMoney(dealsAmount, currency)),
           dealsPrice: formatMoney(centsToMoney(dealsAmount, currency)),
           dealsAmount,
-          retailPrice: formatMoney(centsToMoney(retailAmount, currency)),
-          retailAmount,
-          squarePrice: formatMoney(centsToMoney(squarePriceAmount, currency)),
-          squarePriceAmount,
-          salePriceAmount,
+
+          // MSRP custom attribute is the crossed-out retail price.
+          retailPrice: formatMoney(centsToMoney(msrpAmount, currency)),
+          retailAmount: msrpAmount,
+
+          squarePrice: formatMoney(centsToMoney(dealsAmount, currency)),
+          squarePriceAmount: dealsAmount,
           priceAmount: dealsAmount,
           currency,
           image: firstImageId ? imageMap[firstImageId] : null,
