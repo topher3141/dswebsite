@@ -27,7 +27,6 @@ function centsToMoney(amount?: number | null, currency = "USD"): SquareMoney | n
 
 function parseSquareQuantity(quantity?: string | number | null) {
   if (quantity === null || quantity === undefined) return 0;
-
   const parsed = Number(quantity);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -77,17 +76,16 @@ function extractCustomAttributePriceCents(object: any, possibleNames: string[]) 
 
     if (!labelMatches) continue;
 
-    const rawValue =
-      value?.number_value ??
-      value?.string_value ??
-      value?.money_value?.amount ??
-      value?.amount ??
-      value?.selection_uid_values?.[0] ??
-      null;
-
     if (value?.money_value?.amount && typeof value.money_value.amount === "number") {
       return value.money_value.amount;
     }
+
+    const rawValue =
+      value?.number_value ??
+      value?.string_value ??
+      value?.amount ??
+      value?.selection_uid_values?.[0] ??
+      null;
 
     const cents = parsePriceToCents(rawValue);
     if (cents !== null) return cents;
@@ -100,31 +98,23 @@ function findSalePriceCents(item: any, variation: any) {
   const itemData = item?.item_data || {};
   const variationData = variation?.item_variation_data || {};
 
-  const directMoneyCandidates = [
+  const directCandidates = [
     variationData.SALE_PRICE,
     variationData.sale_price,
     variationData.salePrice,
     variationData.online_sale_price_money,
     variationData.sale_price_money,
-    variationData.ecom_sale_price_money,
-    variationData.ecommerce_sale_price_money,
-    variationData.square_online_sale_price_money,
     itemData.SALE_PRICE,
     itemData.sale_price,
     itemData.salePrice,
     itemData.online_sale_price_money,
     itemData.sale_price_money,
-    itemData.ecom_sale_price_money,
-    itemData.ecommerce_sale_price_money,
-    itemData.square_online_sale_price_money,
   ];
 
-  for (const money of directMoneyCandidates) {
-    if (typeof money?.amount === "number") {
-      return money.amount;
-    }
+  for (const candidate of directCandidates) {
+    if (typeof candidate?.amount === "number") return candidate.amount;
 
-    const parsed = parsePriceToCents(money);
+    const parsed = parsePriceToCents(candidate);
     if (parsed !== null) return parsed;
   }
 
@@ -156,44 +146,30 @@ function findRetailPriceCents(item: any, variation: any) {
   const itemData = item?.item_data || {};
   const variationData = variation?.item_variation_data || {};
 
-  const directMoneyCandidates = [
+  const directCandidates = [
     variationData.RETAIL_PRICE,
-    variationData.ORIGINAL_PRICE,
     variationData.MSRP,
-    variationData.retail_price_money,
-    variationData.original_price_money,
-    variationData.original_retail_price_money,
-    variationData.msrp_money,
-    variationData.compare_at_price_money,
-    variationData.ecom_regular_price_money,
-    variationData.regular_price_money,
+    variationData.ORIGINAL_RETAIL_PRICE,
+    variationData.ORIGINAL_PRICE,
     itemData.RETAIL_PRICE,
-    itemData.ORIGINAL_PRICE,
     itemData.MSRP,
-    itemData.retail_price_money,
-    itemData.original_price_money,
-    itemData.original_retail_price_money,
-    itemData.msrp_money,
-    itemData.compare_at_price_money,
-    itemData.ecom_regular_price_money,
-    itemData.regular_price_money,
+    itemData.ORIGINAL_RETAIL_PRICE,
+    itemData.ORIGINAL_PRICE,
   ];
 
-  for (const money of directMoneyCandidates) {
-    if (typeof money?.amount === "number") {
-      return money.amount;
-    }
+  for (const candidate of directCandidates) {
+    if (typeof candidate?.amount === "number") return candidate.amount;
 
-    const parsed = parsePriceToCents(money);
+    const parsed = parsePriceToCents(candidate);
     if (parsed !== null) return parsed;
   }
 
   return (
     extractCustomAttributePriceCents(variation, [
       "RETAIL_PRICE",
-      "ORIGINAL_PRICE",
       "MSRP",
-      "retail",
+      "ORIGINAL_RETAIL_PRICE",
+      "ORIGINAL_PRICE",
       "retail price",
       "original retail",
       "original retail price",
@@ -204,9 +180,9 @@ function findRetailPriceCents(item: any, variation: any) {
     ]) ??
     extractCustomAttributePriceCents(item, [
       "RETAIL_PRICE",
-      "ORIGINAL_PRICE",
       "MSRP",
-      "retail",
+      "ORIGINAL_RETAIL_PRICE",
+      "ORIGINAL_PRICE",
       "retail price",
       "original retail",
       "original retail price",
@@ -342,28 +318,17 @@ export async function GET() {
         if (!firstPricedVariation) return null;
 
         const variationData = firstPricedVariation.item_variation_data || {};
-        const basePriceMoney = variationData.price_money;
-        const currency = basePriceMoney?.currency || "USD";
-        const basePriceAmount = basePriceMoney?.amount || null;
+        const squarePriceMoney = variationData.price_money;
+        const currency = squarePriceMoney?.currency || "USD";
+        const squarePriceAmount = squarePriceMoney?.amount || null;
 
         const salePriceAmount = findSalePriceCents(item, firstPricedVariation);
-        const customRetailAmount = findRetailPriceCents(item, firstPricedVariation);
+        const retailAmount = findRetailPriceCents(item, firstPricedVariation);
 
         const dealsAmount =
-          salePriceAmount !== null &&
-          salePriceAmount > 0
+          salePriceAmount !== null && salePriceAmount > 0
             ? salePriceAmount
-            : basePriceAmount;
-
-        const retailAmount =
-          customRetailAmount !== null && customRetailAmount > 0
-            ? customRetailAmount
-            : salePriceAmount !== null &&
-                basePriceAmount !== null &&
-                salePriceAmount > 0 &&
-                salePriceAmount < basePriceAmount
-              ? basePriceAmount
-              : null;
+            : squarePriceAmount;
 
         const firstImageId = itemData.image_ids?.[0];
 
@@ -380,8 +345,8 @@ export async function GET() {
           dealsAmount,
           retailPrice: formatMoney(centsToMoney(retailAmount, currency)),
           retailAmount,
-          squareRegularPrice: formatMoney(centsToMoney(basePriceAmount, currency)),
-          squareRegularAmount: basePriceAmount,
+          squarePrice: formatMoney(centsToMoney(squarePriceAmount, currency)),
+          squarePriceAmount,
           salePriceAmount,
           priceAmount: dealsAmount,
           currency,
