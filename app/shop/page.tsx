@@ -116,10 +116,8 @@ function StockLine({ item }: { item: Product }) {
 
 function RetailCompare({
   retailPrice,
-  savingsPercent,
 }: {
   retailPrice?: string;
-  savingsPercent: number | null;
 }) {
   if (!retailPrice) return null;
 
@@ -133,18 +131,11 @@ function RetailCompare({
         <span>{retailPrice}</span>
         <span className="absolute left-1/2 top-1/2 h-[3px] w-[118%] -translate-x-1/2 -translate-y-1/2 rotate-[-12deg] rounded-full bg-pink-600" />
       </span>
-
-      {savingsPercent && (
-        <span className="rotate-[2deg] rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase tracking-wide text-white shadow-sm">
-          Score {savingsPercent}% off
-        </span>
-      )}
     </div>
   );
 }
 
 function DealPriceBlock({ item, large = false }: { item: Product; large?: boolean }) {
-  const savingsPercent = getSavingsPercent(item);
   const hasRetail =
     Boolean(item.retailPrice) &&
     Boolean(item.retailAmount) &&
@@ -154,7 +145,7 @@ function DealPriceBlock({ item, large = false }: { item: Product; large?: boolea
   return (
     <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-[#fff8ef] via-white to-[#fff1f7] p-4 shadow-sm">
       {hasRetail && (
-        <RetailCompare retailPrice={item.retailPrice} savingsPercent={savingsPercent} />
+        <RetailCompare retailPrice={item.retailPrice} />
       )}
 
       <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
@@ -165,10 +156,6 @@ function DealPriceBlock({ item, large = false }: { item: Product; large?: boolea
         <p className={`${large ? "text-5xl" : "text-4xl"} font-black leading-none tracking-tight text-slate-950`}>
           {item.dealsPrice || item.price}
         </p>
-
-        <span className="mb-1 rounded-full bg-teal-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-teal-800">
-          Nice find
-        </span>
       </div>
     </div>
   );
