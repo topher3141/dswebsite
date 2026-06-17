@@ -69,6 +69,8 @@ export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
+  const [checkoutLoadingId, setCheckoutLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProducts() {
@@ -98,6 +100,44 @@ export default function ShopPage() {
     if (selectedCategory === "All") return products;
     return products.filter((item) => item.category === selectedCategory);
   }, [selectedCategory, products]);
+
+  async function handleCheckout(item: Product) {
+    try {
+      setCheckoutError("");
+
+      if (!item.variationId) {
+        throw new Error("This item is missing a Square variation ID.");
+      }
+
+      setCheckoutLoadingId(item.id);
+
+      const response = await fetch("/api/square/create-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          variationId: item.variationId,
+          itemName: item.name,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Unable to create checkout");
+      }
+
+      if (!data.checkoutUrl) {
+        throw new Error("Square did not return a checkout link.");
+      }
+
+      window.location.href = data.checkoutUrl;
+    } catch (err: any) {
+      setCheckoutError(err.message || "Unable to start checkout");
+      setCheckoutLoadingId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#f7efe5] text-slate-900">
@@ -193,6 +233,13 @@ export default function ShopPage() {
             </div>
           </div>
 
+          {checkoutError && (
+            <div className="mb-6 rounded-[1.5rem] border border-pink-200 bg-white p-5 text-pink-700">
+              <p className="font-black">Checkout error</p>
+              <p className="mt-1 text-sm">{checkoutError}</p>
+            </div>
+          )}
+
           {isLoading && (
             <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
               <h3 className="text-2xl font-black">Loading featured finds...</h3>
@@ -210,70 +257,80 @@ export default function ShopPage() {
           {!isLoading && !error && (
             <>
               <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {visibleProducts.map((item) => (
-                  <article
-                    key={item.id}
-                    className="flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                  >
-                    <div className="flex w-full flex-col">
-                      <div className="relative">
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="h-56 w-full object-cover" />
-                        ) : (
-                          <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
-                            Image Coming Soon
-                          </div>
-                        )}
+                {visibleProducts.map((item) => {
+                  const isCheckingOut = checkoutLoadingId === item.id;
+                  const canCheckout = Boolean(item.variationId) && !checkoutLoadingId;
 
-                        <span className="absolute left-4 top-4 rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase text-white">
-                          Featured
-                        </span>
-                      </div>
-
-                      <div className="flex flex-1 flex-col p-5">
-                        <p className="text-xs font-black uppercase tracking-wide text-teal-700">
-                          {item.category || "Featured Find"}
-                        </p>
-
-                        <h3 className="mt-2 min-h-[4.8rem] text-xl font-black leading-tight text-slate-950">
-                          {item.name}
-                        </h3>
-
-                        <div className="mt-3 min-h-[4.5rem]">
-                          {item.description ? (
-                            <p className="line-clamp-3 text-sm leading-6 text-slate-600">
-                              {item.description}
-                            </p>
+                  return (
+                    <article
+                      key={item.id}
+                      className="flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                    >
+                      <div className="flex w-full flex-col">
+                        <div className="relative">
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="h-56 w-full object-cover" />
                           ) : (
-                            <p className="text-sm leading-6 text-slate-400">
-                              More details available in store.
-                            </p>
+                            <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
+                              Image Coming Soon
+                            </div>
                           )}
+
+                          <span className="absolute left-4 top-4 rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase text-white">
+                            Featured
+                          </span>
                         </div>
 
-                        <div className="mt-auto pt-4">
-                          <p className="text-xs font-black uppercase tracking-wide text-pink-600">
-                            Deals & Steals Price
+                        <div className="flex flex-1 flex-col p-5">
+                          <p className="text-xs font-black uppercase tracking-wide text-teal-700">
+                            {item.category || "Featured Find"}
                           </p>
 
-                          <p className="text-3xl font-black text-slate-950">{item.price}</p>
+                          <h3 className="mt-2 min-h-[4.8rem] text-xl font-black leading-tight text-slate-950">
+                            {item.name}
+                          </h3>
 
-                          <div className="mt-4 space-y-1 text-sm font-bold text-slate-600">
-                            <p>✅ Pickup Available</p>
-                            <p>✅ Limited Quantity</p>
+                          <div className="mt-3 min-h-[4.5rem]">
+                            {item.description ? (
+                              <p className="line-clamp-3 text-sm leading-6 text-slate-600">
+                                {item.description}
+                              </p>
+                            ) : (
+                              <p className="text-sm leading-6 text-slate-400">
+                                More details available in store.
+                              </p>
+                            )}
                           </div>
 
-                          <button
-                            disabled
-                            className="mt-5 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl bg-slate-300 px-5 py-3 font-black text-slate-600"
-                          >
-                            Checkout Coming Soon
-                          </button>
+                          <div className="mt-auto pt-4">
+                            <p className="text-xs font-black uppercase tracking-wide text-pink-600">
+                              Deals & Steals Price
+                            </p>
+
+                            <p className="text-3xl font-black text-slate-950">{item.price}</p>
+
+                            <div className="mt-4 space-y-1 text-sm font-bold text-slate-600">
+                              <p>✅ Pickup Available</p>
+                              <p>✅ Limited Quantity</p>
+                            </div>
+
+                            <button
+                              onClick={() => handleCheckout(item)}
+                              disabled={!canCheckout}
+                              className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 font-black transition ${
+                                canCheckout
+                                  ? "bg-teal-700 text-white hover:bg-teal-800"
+                                  : "cursor-not-allowed bg-slate-300 text-slate-600"
+                              }`}
+                            >
+                              {isCheckingOut ? "Opening Checkout..." : "Reserve & Pay"}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
 
               {visibleProducts.length === 0 && (
