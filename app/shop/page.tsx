@@ -75,7 +75,24 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
     );
   }
 
+  if (name === "search") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+    );
+  }
+
   return null;
+}
+
+function getSavingsPercent(item: Product) {
+  if (!item.retailAmount || !item.dealsAmount) return null;
+  if (item.retailAmount <= item.dealsAmount) return null;
+
+  const savings = Math.round(((item.retailAmount - item.dealsAmount) / item.retailAmount) * 100);
+  return savings > 0 ? savings : null;
 }
 
 function StockLine({ item }: { item: Product }) {
@@ -106,6 +123,7 @@ function ProductDescriptionModal({
 }) {
   if (!product) return null;
 
+  const savingsPercent = getSavingsPercent(product);
   const hasRetail =
     Boolean(product.retailPrice) &&
     Boolean(product.retailAmount) &&
@@ -124,11 +142,19 @@ function ProductDescriptionModal({
         </button>
 
         {product.image && (
-          <img
-            src={product.image}
-            alt={product.name}
-            className="mb-6 h-64 w-full rounded-[1.5rem] object-cover"
-          />
+          <div className="relative mb-6">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-72 w-full rounded-[1.5rem] object-cover"
+            />
+
+            {savingsPercent && (
+              <div className="absolute left-4 top-4 rounded-full bg-pink-600 px-4 py-2 text-sm font-black text-white shadow-md">
+                Save {savingsPercent}%
+              </div>
+            )}
+          </div>
         )}
 
         <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
@@ -139,16 +165,28 @@ function ProductDescriptionModal({
           {product.name}
         </h3>
 
-        <div className="mt-4">
+        <div className="mt-5 rounded-2xl bg-[#fff8ef] p-5">
           {hasRetail && (
             <p className="text-base font-bold text-slate-500">
               Retail: <span className="line-through">{product.retailPrice}</span>
             </p>
           )}
 
-          <p className="mt-1 text-3xl font-black text-slate-950">
-            {product.dealsPrice || product.price}
+          <p className="mt-1 text-xs font-black uppercase tracking-wide text-pink-600">
+            Deals & Steals Price
           </p>
+
+          <div className="flex flex-wrap items-end gap-3">
+            <p className="text-4xl font-black text-slate-950">
+              {product.dealsPrice || product.price}
+            </p>
+
+            {savingsPercent && (
+              <p className="rounded-full bg-teal-100 px-3 py-1 text-sm font-black text-teal-800">
+                You save {savingsPercent}%
+              </p>
+            )}
+          </div>
         </div>
 
         <StockLine item={product} />
@@ -163,6 +201,7 @@ function ProductDescriptionModal({
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -203,9 +242,18 @@ export default function ShopPage() {
   }, []);
 
   const visibleProducts = useMemo(() => {
-    if (selectedCategory === "All") return products;
-    return products;
-  }, [selectedCategory, products]);
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return products.filter((item) => {
+      const matchesCategory = selectedCategory === "All";
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        item.name.toLowerCase().includes(normalizedSearch) ||
+        String(item.description || "").toLowerCase().includes(normalizedSearch);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [selectedCategory, products, searchTerm]);
 
   async function handleCheckout(item: Product) {
     try {
@@ -303,52 +351,81 @@ export default function ShopPage() {
           <div className="absolute bottom-6 right-24 hidden h-64 w-64 rounded-full bg-pink-100/45 blur-3xl lg:block" />
 
           <div className="relative mx-auto max-w-7xl px-5 py-14 lg:py-20">
-            <div className="max-w-4xl">
-              <div className="mb-5 inline-flex items-center gap-3 rounded-full bg-teal-100 px-5 py-2 text-sm font-black uppercase tracking-wide text-slate-950 shadow-sm">
-                <span className="relative flex h-3 w-3">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-teal-600"></span>
-                </span>
-                <span>Online Shop</span>
+            <div className="grid gap-10 lg:grid-cols-[1fr_.55fr] lg:items-end">
+              <div className="max-w-4xl">
+                <div className="mb-5 inline-flex items-center gap-3 rounded-full bg-teal-100 px-5 py-2 text-sm font-black uppercase tracking-wide text-slate-950 shadow-sm">
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-teal-600"></span>
+                  </span>
+                  <span>Online Shop</span>
+                </div>
+
+                <h1 className="text-5xl font-black leading-none tracking-tight text-slate-950 md:text-7xl">
+                  Score the kind of deals worth bragging about.
+                </h1>
+
+                <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700 md:text-xl">
+                  Hand-picked Deals & Steals finds available for local pickup. Fresh items, limited quantities, and prices that feel like a win.
+                </p>
+
+                <div className="mt-8 flex flex-wrap gap-3 text-sm font-black text-slate-700">
+                  <span className="rounded-full bg-[#fff8ef] px-4 py-2">📍 Pickup in Glen Burnie</span>
+                  <span className="rounded-full bg-[#fff8ef] px-4 py-2">🔄 Inventory updates weekly</span>
+                </div>
               </div>
 
-              <h1 className="text-5xl font-black leading-none tracking-tight text-slate-950 md:text-7xl">
-                Shop a curated selection of our best deals.
-              </h1>
-
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-700 md:text-xl">
-                These are hand-picked higher-value items available for local pickup. Inventory changes often, so if you see something you love, don’t wait.
-              </p>
-
-              <div className="mt-8 flex flex-wrap gap-3 text-sm font-black text-slate-700">
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">📍 Pickup in Glen Burnie</span>
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">🔄 Inventory updates weekly</span>
+              <div className="rounded-[2rem] border-2 border-pink-100 bg-[#fff8ef] p-6 shadow-sm">
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
+                  Deal drop
+                </p>
+                <p className="mt-3 text-4xl font-black leading-none text-slate-950">
+                  Limited finds.
+                </p>
+                <p className="mt-2 text-4xl font-black leading-none text-pink-600">
+                  Big savings.
+                </p>
+                <p className="mt-4 text-sm font-bold leading-6 text-slate-600">
+                  Items disappear fast. If you love it, reserve it before someone else scores it.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
         <section className="mx-auto max-w-7xl px-5 py-10">
-          <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">Browse</p>
-              <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">Featured Finds</h2>
+          <div className="mb-8 flex flex-col gap-6">
+            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">Browse</p>
+                <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">Featured Finds</h2>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`rounded-full border px-5 py-2 text-sm font-black transition ${
+                      selectedCategory === category
+                        ? "border-teal-700 bg-teal-700 text-white"
+                        : "border-slate-300 bg-white text-slate-800 hover:bg-teal-50"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`rounded-full border px-5 py-2 text-sm font-black transition ${
-                    selectedCategory === category
-                      ? "border-teal-700 bg-teal-700 text-white"
-                      : "border-slate-300 bg-white text-slate-800 hover:bg-teal-50"
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+            <div className="relative max-w-xl">
+              <Icon name="search" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search featured finds..."
+                className="w-full rounded-2xl border-2 border-slate-200 bg-white py-4 pl-12 pr-4 text-base font-bold text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
+              />
             </div>
           </div>
 
@@ -379,6 +456,7 @@ export default function ShopPage() {
                 {visibleProducts.map((item) => {
                   const isCheckingOut = checkoutLoadingId === item.id;
                   const canCheckout = Boolean(item.variationId) && !isCheckingOut;
+                  const savingsPercent = getSavingsPercent(item);
                   const hasRetail =
                     Boolean(item.retailPrice) &&
                     Boolean(item.retailAmount) &&
@@ -388,15 +466,25 @@ export default function ShopPage() {
                   return (
                     <article
                       key={item.id}
-                      className="flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                      className="group flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="flex w-full flex-col">
-                        <div className="relative">
+                        <div className="relative overflow-hidden">
                           {item.image ? (
-                            <img src={item.image} alt={item.name} className="h-56 w-full object-cover" />
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-56 w-full object-cover transition duration-700 group-hover:scale-105"
+                            />
                           ) : (
                             <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
                               Image Coming Soon
+                            </div>
+                          )}
+
+                          {savingsPercent && (
+                            <div className="absolute left-4 top-4 rounded-full bg-pink-600 px-4 py-2 text-sm font-black text-white shadow-md">
+                              Save {savingsPercent}%
                             </div>
                           )}
                         </div>
@@ -428,19 +516,29 @@ export default function ShopPage() {
                           </div>
 
                           <div className="mt-auto pt-4">
-                            {hasRetail && (
-                              <p className="text-sm font-bold text-slate-500">
-                                Retail: <span className="line-through">{item.retailPrice}</span>
+                            <div className="rounded-2xl bg-[#fff8ef] p-4">
+                              {hasRetail && (
+                                <p className="text-sm font-bold text-slate-500">
+                                  Retail: <span className="line-through">{item.retailPrice}</span>
+                                </p>
+                              )}
+
+                              <p className="mt-1 text-xs font-black uppercase tracking-wide text-pink-600">
+                                Deals & Steals Price
                               </p>
-                            )}
 
-                            <p className="mt-1 text-xs font-black uppercase tracking-wide text-pink-600">
-                              Deals & Steals Price
-                            </p>
+                              <div className="flex flex-wrap items-end gap-2">
+                                <p className="text-3xl font-black text-slate-950">
+                                  {item.dealsPrice || item.price}
+                                </p>
 
-                            <p className="text-3xl font-black text-slate-950">
-                              {item.dealsPrice || item.price}
-                            </p>
+                                {savingsPercent && (
+                                  <span className="mb-1 rounded-full bg-teal-100 px-2.5 py-1 text-xs font-black text-teal-800">
+                                    You save {savingsPercent}%
+                                  </span>
+                                )}
+                              </div>
+                            </div>
 
                             <StockLine item={item} />
 
@@ -470,9 +568,9 @@ export default function ShopPage() {
 
               {visibleProducts.length === 0 && (
                 <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
-                  <h3 className="text-2xl font-black">No items currently available.</h3>
+                  <h3 className="text-2xl font-black">No matching items found.</h3>
                   <p className="mt-2 text-slate-600">
-                    Featured items only show here when at least 1 is available in Square inventory.
+                    Try a different search or check back soon for the next deal drop.
                   </p>
                 </div>
               )}
