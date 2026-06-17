@@ -209,58 +209,68 @@ export default function ShopPage() {
 
           {!isLoading && !error && (
             <>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {visibleProducts.map((item) => (
                   <article
                     key={item.id}
-                    className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                    className="flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
                   >
-                    <div className="relative">
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} className="h-56 w-full object-cover" />
-                      ) : (
-                        <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
-                          Image Coming Soon
-                        </div>
-                      )}
+                    <div className="flex w-full flex-col">
+                      <div className="relative">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="h-56 w-full object-cover" />
+                        ) : (
+                          <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
+                            Image Coming Soon
+                          </div>
+                        )}
 
-                      <span className="absolute left-4 top-4 rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase text-white">
-                        Featured
-                      </span>
-                    </div>
-
-                    <div className="p-5">
-                      <p className="text-xs font-black uppercase tracking-wide text-teal-700">
-                        {item.category || "Featured Find"}
-                      </p>
-
-                      <h3 className="mt-2 min-h-[3.2rem] text-xl font-black leading-tight text-slate-950">
-                        {item.name}
-                      </h3>
-
-                      {item.description && (
-                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-                          {item.description}
-                        </p>
-                      )}
-
-                      <p className="mt-4 text-xs font-black uppercase tracking-wide text-pink-600">
-                        Deals & Steals Price
-                      </p>
-
-                      <p className="text-3xl font-black text-slate-950">{item.price}</p>
-
-                      <div className="mt-4 space-y-1 text-sm font-bold text-slate-600">
-                        <p>✅ Pickup Available</p>
-                        <p>✅ Limited Quantity</p>
+                        <span className="absolute left-4 top-4 rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase text-white">
+                          Featured
+                        </span>
                       </div>
 
-                      <button
-                        disabled
-                        className="mt-5 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl bg-slate-300 px-5 py-3 font-black text-slate-600"
-                      >
-                        Checkout Coming Soon
-                      </button>
+                      <div className="flex flex-1 flex-col p-5">
+                        <p className="text-xs font-black uppercase tracking-wide text-teal-700">
+                          {item.category || "Featured Find"}
+                        </p>
+
+                        <h3 className="mt-2 min-h-[4.8rem] text-xl font-black leading-tight text-slate-950">
+                          {item.name}
+                        </h3>
+
+                        <div className="mt-3 min-h-[4.5rem]">
+                          {item.description ? (
+                            <p className="line-clamp-3 text-sm leading-6 text-slate-600">
+                              {item.description}
+                            </p>
+                          ) : (
+                            <p className="text-sm leading-6 text-slate-400">
+                              More details available in store.
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="mt-auto pt-4">
+                          <p className="text-xs font-black uppercase tracking-wide text-pink-600">
+                            Deals & Steals Price
+                          </p>
+
+                          <p className="text-3xl font-black text-slate-950">{item.price}</p>
+
+                          <div className="mt-4 space-y-1 text-sm font-bold text-slate-600">
+                            <p>✅ Pickup Available</p>
+                            <p>✅ Limited Quantity</p>
+                          </div>
+
+                          <button
+                            disabled
+                            className="mt-5 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl bg-slate-300 px-5 py-3 font-black text-slate-600"
+                          >
+                            Checkout Coming Soon
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </article>
                 ))}
