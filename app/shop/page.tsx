@@ -144,9 +144,24 @@ export default function ShopPage() {
 
           <nav className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-700 md:gap-6">
             <a href="/" className="hover:text-pink-600">Home</a>
-            <a href="/shop" className="text-pink-600">Shop</a>
-            <a href="/#hours" className="hover:text-pink-600">Hours</a>
-            <a href="/#visit" className="hover:text-pink-600">Visit Us</a>
+<a href="/#why-us" className="hover:text-pink-600">
+  Why Us
+</a>
+
+<a href="/#hours" className="hover:text-pink-600">
+  Hours
+</a>
+
+<a href="/#visit" className="hover:text-pink-600">
+  Visit Us
+</a>
+
+<a
+  href="/shop"
+  className="font-black text-pink-600"
+>
+  Shop
+</a>
             <a
               href={INVOICE_URL}
               target="_blank"
