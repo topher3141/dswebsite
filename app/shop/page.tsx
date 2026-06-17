@@ -15,8 +15,11 @@ type Product = {
   variationId?: string | null;
   name: string;
   description?: string;
-  category?: string;
   price: string;
+  dealsPrice?: string;
+  dealsAmount?: number | null;
+  retailPrice?: string;
+  retailAmount?: number | null;
   priceAmount?: number | null;
   currency?: string;
   image?: string | null;
@@ -63,10 +66,19 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
     );
   }
 
+  if (name === "close") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </svg>
+    );
+  }
+
   return null;
 }
 
-function StockBadge({ item }: { item: Product }) {
+function StockLine({ item }: { item: Product }) {
   const stockCount = item.stockCount || 0;
 
   if (stockCount <= 0) return null;
@@ -74,14 +86,70 @@ function StockBadge({ item }: { item: Product }) {
   const isLowStock = item.lowStock || stockCount <= 3;
 
   return (
-    <div
-      className={`mt-4 rounded-xl px-4 py-3 text-sm font-black ${
-        isLowStock
-          ? "bg-pink-100 text-pink-700"
-          : "bg-teal-100 text-teal-800"
+    <p
+      className={`mt-3 text-sm font-black ${
+        isLowStock ? "text-pink-600" : "text-teal-700"
       }`}
     >
-      {isLowStock ? `⚠️ Only ${stockCount} left in stock` : `✅ ${stockCount} left in stock`}
+      {isLowStock ? `Only ${stockCount} left in stock` : `${stockCount} left in stock`}
+    </p>
+  );
+}
+
+function ProductDescriptionModal({
+  product,
+  onClose,
+}: {
+  product: Product | null;
+  onClose: () => void;
+}) {
+  if (!product) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-5 py-8">
+      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-auto rounded-[2rem] bg-white p-6 shadow-2xl md:p-8">
+        <button
+          onClick={onClose}
+          className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+          aria-label="Close description"
+        >
+          <Icon name="close" className="h-5 w-5" />
+        </button>
+
+        {product.image && (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="mb-6 h-64 w-full rounded-[1.5rem] object-cover"
+          />
+        )}
+
+        <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
+          Item details
+        </p>
+
+        <h3 className="mt-3 pr-10 text-3xl font-black leading-tight text-slate-950">
+          {product.name}
+        </h3>
+
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          {product.retailPrice && product.retailAmount && product.dealsAmount && product.retailAmount > product.dealsAmount && (
+            <p className="text-base font-bold text-slate-500">
+              Retail: <span className="line-through">{product.retailPrice}</span>
+            </p>
+          )}
+
+          <p className="text-3xl font-black text-slate-950">
+            {product.dealsPrice || product.price}
+          </p>
+        </div>
+
+        <StockLine item={product} />
+
+        <p className="mt-6 whitespace-pre-line text-base leading-8 text-slate-700">
+          {product.description || "More details available in store."}
+        </p>
+      </div>
     </div>
   );
 }
@@ -89,6 +157,7 @@ function StockBadge({ item }: { item: Product }) {
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
@@ -128,7 +197,7 @@ export default function ShopPage() {
 
   const visibleProducts = useMemo(() => {
     if (selectedCategory === "All") return products;
-    return products.filter((item) => item.category === selectedCategory);
+    return products;
   }, [selectedCategory, products]);
 
   async function handleCheckout(item: Product) {
@@ -183,6 +252,8 @@ export default function ShopPage() {
 
   return (
     <div className="min-h-screen bg-[#f7efe5] text-slate-900">
+      <ProductDescriptionModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+
       <header className="sticky top-0 z-40 border-b-4 border-pink-500 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
           <a href="/" className="inline-flex items-center gap-3">
@@ -302,6 +373,11 @@ export default function ShopPage() {
                 {visibleProducts.map((item) => {
                   const isCheckingOut = checkoutLoadingId === item.id;
                   const canCheckout = Boolean(item.variationId) && !isCheckingOut;
+                  const hasRetail =
+                    Boolean(item.retailPrice) &&
+                    Boolean(item.retailAmount) &&
+                    Boolean(item.dealsAmount) &&
+                    Number(item.retailAmount) > Number(item.dealsAmount);
 
                   return (
                     <article
@@ -317,26 +393,27 @@ export default function ShopPage() {
                               Image Coming Soon
                             </div>
                           )}
-
-                          <span className="absolute left-4 top-4 rounded-full bg-pink-600 px-3 py-1 text-xs font-black uppercase text-white">
-                            Featured
-                          </span>
                         </div>
 
                         <div className="flex flex-1 flex-col p-5">
-                          <p className="text-xs font-black uppercase tracking-wide text-teal-700">
-                            {item.category || "Featured Find"}
-                          </p>
-
-                          <h3 className="mt-2 min-h-[4.8rem] text-xl font-black leading-tight text-slate-950">
+                          <h3 className="min-h-[4.8rem] text-xl font-black leading-tight text-slate-950">
                             {item.name}
                           </h3>
 
                           <div className="mt-3 min-h-[4.5rem]">
                             {item.description ? (
-                              <p className="line-clamp-3 text-sm leading-6 text-slate-600">
-                                {item.description}
-                              </p>
+                              <>
+                                <p className="line-clamp-3 text-sm leading-6 text-slate-600">
+                                  {item.description}
+                                </p>
+
+                                <button
+                                  onClick={() => setSelectedProduct(item)}
+                                  className="mt-2 text-sm font-black text-pink-600 transition hover:text-pink-700"
+                                >
+                                  View full description
+                                </button>
+                              </>
                             ) : (
                               <p className="text-sm leading-6 text-slate-400">
                                 More details available in store.
@@ -345,18 +422,25 @@ export default function ShopPage() {
                           </div>
 
                           <div className="mt-auto pt-4">
-                            <p className="text-xs font-black uppercase tracking-wide text-pink-600">
+                            {hasRetail && (
+                              <p className="text-sm font-bold text-slate-500">
+                                Retail: <span className="line-through">{item.retailPrice}</span>
+                              </p>
+                            )}
+
+                            <p className="mt-1 text-xs font-black uppercase tracking-wide text-pink-600">
                               Deals & Steals Price
                             </p>
 
-                            <p className="text-3xl font-black text-slate-950">{item.price}</p>
+                            <p className="text-3xl font-black text-slate-950">
+                              {item.dealsPrice || item.price}
+                            </p>
 
-                            <StockBadge item={item} />
+                            <StockLine item={item} />
 
-                            <div className="mt-4 space-y-1 text-sm font-bold text-slate-600">
-                              <p>✅ Pickup Available</p>
-                              <p>✅ Local pickup only</p>
-                            </div>
+                            <p className="mt-4 text-sm font-bold text-slate-600">
+                              Local pickup only
+                            </p>
 
                             <button
                               onClick={() => handleCheckout(item)}
