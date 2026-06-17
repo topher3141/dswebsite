@@ -151,9 +151,10 @@ export default function ShopPage() {
         throw new Error("Square did not return a checkout link.");
       }
 
-      window.location.href = data.checkoutUrl;
+      window.open(data.checkoutUrl, "_blank", "noopener,noreferrer");
     } catch (err: any) {
       setCheckoutError(err.message || "Unable to start checkout");
+    } finally {
       setCheckoutLoadingId(null);
     }
   }
@@ -278,7 +279,7 @@ export default function ShopPage() {
               <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {visibleProducts.map((item) => {
                   const isCheckingOut = checkoutLoadingId === item.id;
-                  const canCheckout = Boolean(item.variationId) && !checkoutLoadingId;
+                  const canCheckout = Boolean(item.variationId) && !isCheckingOut;
 
                   return (
                     <article
