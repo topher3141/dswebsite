@@ -33,6 +33,14 @@ async function squarePost(path: string, body: unknown) {
   return data;
 }
 
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    route: "/api/square/create-checkout",
+    message: "Checkout API route is deployed and reachable.",
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const locationId = process.env.SQUARE_LOCATION_ID;
@@ -60,6 +68,22 @@ export async function POST(request: NextRequest) {
       request.headers.get("origin") ||
       "https://www.dealsandstealsmd.com";
 
+    const serviceFeePercentage = process.env.SQUARE_SERVICE_FEE_PERCENTAGE;
+    const serviceFeeName = process.env.SQUARE_SERVICE_FEE_NAME || "Online Checkout Service Fee";
+
+    const serviceCharges =
+      serviceFeePercentage && Number(serviceFeePercentage) > 0
+        ? [
+            {
+              name: serviceFeeName,
+              percentage: serviceFeePercentage,
+              scope: "ORDER",
+              taxable: false,
+              calculation_phase: "TOTAL_PHASE",
+            },
+          ]
+        : undefined;
+
     const checkoutResponse = await squarePost("/v2/online-checkout/payment-links", {
       idempotency_key: crypto.randomUUID(),
       description: `Deals & Steals - ${itemName}`,
@@ -71,6 +95,10 @@ export async function POST(request: NextRequest) {
             quantity: "1",
           },
         ],
+        pricing_options: {
+          auto_apply_taxes: true,
+        },
+        ...(serviceCharges ? { service_charges: serviceCharges } : {}),
       },
       checkout_options: {
         redirect_url: `${siteUrl}/shop/success`,
