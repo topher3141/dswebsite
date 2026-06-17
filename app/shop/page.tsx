@@ -143,25 +143,11 @@ export default function ShopPage() {
           </a>
 
           <nav className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-700 md:gap-6">
-            <a href="/" className="hover:text-pink-600">Home</a>
-<a href="/#why-us" className="hover:text-pink-600">
-  Why Us
-</a>
+            <a href="/#difference" className="hover:text-pink-600">Why Us</a>
+            <a href="/#hours" className="hover:text-pink-600">Hours</a>
+            <a href="/#visit" className="hover:text-pink-600">Visit Us</a>
+            <a href="/shop" className="font-black text-pink-600">Shop</a>
 
-<a href="/#hours" className="hover:text-pink-600">
-  Hours
-</a>
-
-<a href="/#visit" className="hover:text-pink-600">
-  Visit Us
-</a>
-
-<a
-  href="/shop"
-  className="font-black text-pink-600"
->
-  Shop
-</a>
             <a
               href={INVOICE_URL}
               target="_blank"
@@ -171,6 +157,7 @@ export default function ShopPage() {
             >
               Pay Invoice
             </a>
+
             <a
               href={LOYALTY_URL}
               target="_blank"
@@ -197,7 +184,7 @@ export default function ShopPage() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
                   <span className="relative inline-flex h-3 w-3 rounded-full bg-teal-600"></span>
                 </span>
-                <span>Featured Finds</span>
+                <span>Online Shop</span>
               </div>
 
               <h1 className="text-5xl font-black leading-none tracking-tight text-slate-950 md:text-7xl">
