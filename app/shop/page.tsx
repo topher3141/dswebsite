@@ -28,6 +28,11 @@ type Product = {
   lowStock?: boolean;
 };
 
+type CartItem = {
+  product: Product;
+  quantity: number;
+};
+
 function Icon({ name, className = "" }: { name: string; className?: string }) {
   const common = `h-6 w-6 ${className}`;
 
@@ -84,7 +89,27 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
     );
   }
 
+  if (name === "cart") {
+    return (
+      <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M6 6h15l-1.5 9h-12z" />
+        <path d="M6 6 5.2 3H3" />
+        <circle cx="9" cy="20" r="1.5" />
+        <circle cx="18" cy="20" r="1.5" />
+      </svg>
+    );
+  }
+
   return null;
+}
+
+function formatCents(amount?: number | null, currency = "USD") {
+  if (typeof amount !== "number" || !Number.isFinite(amount)) return "$0.00";
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(amount / 100);
 }
 
 function getSavingsPercent(item: Product) {
@@ -152,11 +177,9 @@ function DealPriceBlock({ item, large = false }: { item: Product; large?: boolea
         Your Deal
       </p>
 
-      <div className="flex flex-wrap items-end gap-2">
-        <p className={`${large ? "text-5xl" : "text-4xl"} font-black leading-none tracking-tight text-slate-950`}>
-          {item.dealsPrice || item.price}
-        </p>
-      </div>
+      <p className={`${large ? "text-5xl" : "text-4xl"} font-black leading-none tracking-tight text-slate-950`}>
+        {item.dealsPrice || item.price}
+      </p>
     </div>
   );
 }
@@ -164,17 +187,23 @@ function DealPriceBlock({ item, large = false }: { item: Product; large?: boolea
 function ProductDescriptionModal({
   product,
   onClose,
+  onAddToCart,
+  cartQuantity,
 }: {
   product: Product | null;
   onClose: () => void;
+  onAddToCart: (product: Product) => void;
+  cartQuantity: number;
 }) {
   if (!product) return null;
 
   const savingsPercent = getSavingsPercent(product);
+  const stockCount = product.stockCount || 0;
+  const canAddMore = stockCount <= 0 || cartQuantity < stockCount;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-5 py-8">
-      <div className="relative max-h-[90vh] w-full max-w-2xl overflow-auto rounded-[2rem] bg-white p-6 shadow-2xl md:p-8">
+      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-auto rounded-[2rem] bg-white p-6 shadow-2xl md:p-8">
         <button
           onClick={onClose}
           className="absolute right-5 top-5 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-md transition hover:bg-slate-100"
@@ -183,40 +212,255 @@ function ProductDescriptionModal({
           <Icon name="close" className="h-5 w-5" />
         </button>
 
-        {product.image && (
-          <div className="relative mb-6">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="h-72 w-full rounded-[1.5rem] object-cover"
-            />
+        <div className="grid gap-7 md:grid-cols-[.9fr_1.1fr]">
+          <div>
+            {product.image ? (
+              <div className="relative">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="h-80 w-full rounded-[1.5rem] object-cover"
+                />
 
-            {savingsPercent && (
-              <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-white shadow-md">
-                Score {savingsPercent}% Off
+                {savingsPercent && (
+                  <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-white shadow-md">
+                    Score {savingsPercent}% Off
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex h-80 w-full items-center justify-center rounded-[1.5rem] bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
+                Image Coming Soon
               </div>
             )}
           </div>
-        )}
 
-        <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
-          Item details
-        </p>
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
+              Item details
+            </p>
 
-        <h3 className="mt-3 pr-10 text-3xl font-black leading-tight text-slate-950">
-          {product.name}
-        </h3>
+            <h3 className="mt-3 pr-10 text-3xl font-black leading-tight text-slate-950">
+              {product.name}
+            </h3>
 
-        <div className="mt-5">
-          <DealPriceBlock item={product} large />
+            <div className="mt-5">
+              <DealPriceBlock item={product} large />
+            </div>
+
+            <StockLine item={product} />
+
+            <p className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-600">
+              <span className="text-teal-700">✅</span>
+              <span>Local pickup only</span>
+            </p>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={() => onAddToCart(product)}
+                disabled={!product.variationId || !canAddMore}
+                className={`inline-flex flex-1 items-center justify-center rounded-xl px-5 py-3 font-black transition ${
+                  product.variationId && canAddMore
+                    ? "bg-teal-700 text-white hover:bg-teal-800"
+                    : "cursor-not-allowed bg-slate-300 text-slate-600"
+                }`}
+              >
+                Add to Cart
+              </button>
+
+              <button
+                onClick={onClose}
+                className="inline-flex items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-5 py-3 font-black text-slate-800 transition hover:bg-slate-50"
+              >
+                Keep Browsing
+              </button>
+            </div>
+
+            {cartQuantity > 0 && (
+              <p className="mt-3 text-sm font-bold text-slate-500">
+                You have {cartQuantity} in your cart.
+              </p>
+            )}
+          </div>
         </div>
 
-        <StockLine item={product} />
-
-        <p className="mt-6 whitespace-pre-line text-base leading-8 text-slate-700">
-          {product.description || "More details available in store."}
-        </p>
+        <div className="mt-7 border-t border-slate-200 pt-6">
+          <p className="whitespace-pre-line text-base leading-8 text-slate-700">
+            {product.description || "More details available in store."}
+          </p>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function CartDrawer({
+  isOpen,
+  cartItems,
+  onClose,
+  onIncrease,
+  onDecrease,
+  onRemove,
+  onCheckout,
+  isCheckingOut,
+}: {
+  isOpen: boolean;
+  cartItems: CartItem[];
+  onClose: () => void;
+  onIncrease: (product: Product) => void;
+  onDecrease: (product: Product) => void;
+  onRemove: (product: Product) => void;
+  onCheckout: () => void;
+  isCheckingOut: boolean;
+}) {
+  const subtotal = cartItems.reduce((sum, item) => {
+    return sum + (item.product.dealsAmount || item.product.priceAmount || 0) * item.quantity;
+  }, 0);
+
+  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <button
+        className="absolute inset-0 bg-slate-950/60"
+        onClick={onClose}
+        aria-label="Close cart"
+      />
+
+      <aside className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 p-5">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-pink-600">
+              Your Cart
+            </p>
+            <h2 className="text-2xl font-black text-slate-950">
+              {itemCount === 1 ? "1 item" : `${itemCount} items`}
+            </h2>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+            aria-label="Close cart"
+          >
+            <Icon name="close" className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-5">
+          {cartItems.length === 0 ? (
+            <div className="rounded-[1.5rem] bg-[#fff8ef] p-6 text-center">
+              <p className="text-2xl font-black text-slate-950">Your cart is empty.</p>
+              <p className="mt-2 text-sm font-bold text-slate-600">
+                Add a deal before someone else scores it.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {cartItems.map((cartItem) => {
+                const product = cartItem.product;
+                const stockCount = product.stockCount || 0;
+                const canIncrease = stockCount <= 0 || cartItem.quantity < stockCount;
+
+                return (
+                  <div key={product.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex gap-4">
+                      {product.image ? (
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="h-20 w-20 rounded-2xl object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-[#fff8ef] text-xs font-black text-slate-400">
+                          No Image
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-black leading-5 text-slate-950">
+                          {product.name}
+                        </p>
+
+                        <p className="mt-1 text-lg font-black text-pink-600">
+                          {product.dealsPrice || product.price}
+                        </p>
+
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50">
+                            <button
+                              onClick={() => onDecrease(product)}
+                              className="px-3 py-1.5 text-lg font-black text-slate-700 hover:text-pink-600"
+                              aria-label="Decrease quantity"
+                            >
+                              -
+                            </button>
+
+                            <span className="min-w-8 text-center text-sm font-black">
+                              {cartItem.quantity}
+                            </span>
+
+                            <button
+                              onClick={() => onIncrease(product)}
+                              disabled={!canIncrease}
+                              className={`px-3 py-1.5 text-lg font-black ${
+                                canIncrease
+                                  ? "text-slate-700 hover:text-pink-600"
+                                  : "cursor-not-allowed text-slate-300"
+                              }`}
+                              aria-label="Increase quantity"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() => onRemove(product)}
+                            className="text-xs font-black uppercase tracking-wide text-slate-400 transition hover:text-pink-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        {stockCount > 0 && (
+                          <p className="mt-2 text-xs font-bold text-slate-500">
+                            {stockCount} available
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-slate-200 p-5">
+          <div className="mb-4 flex items-center justify-between text-lg font-black">
+            <span>Subtotal</span>
+            <span>{formatCents(subtotal)}</span>
+          </div>
+
+          <p className="mb-4 text-xs font-bold leading-5 text-slate-500">
+            Taxes and any checkout fees are calculated by Square. Pickup is local only.
+          </p>
+
+          <button
+            onClick={onCheckout}
+            disabled={cartItems.length === 0 || isCheckingOut}
+            className={`inline-flex w-full items-center justify-center rounded-xl px-5 py-4 font-black transition ${
+              cartItems.length > 0 && !isCheckingOut
+                ? "bg-pink-600 text-white hover:bg-pink-700"
+                : "cursor-not-allowed bg-slate-300 text-slate-600"
+            }`}
+          >
+            {isCheckingOut ? "Opening Checkout..." : "Checkout with Square"}
+          </button>
+        </div>
+      </aside>
     </div>
   );
 }
@@ -226,10 +470,12 @@ export default function ShopPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
-  const [checkoutLoadingId, setCheckoutLoadingId] = useState<string | null>(null);
+  const [isCheckingOutCart, setIsCheckingOutCart] = useState(false);
 
   useEffect(() => {
     async function loadProducts() {
@@ -263,6 +509,12 @@ export default function ShopPage() {
     loadProducts();
   }, []);
 
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const selectedProductCartQuantity = selectedProduct
+    ? cartItems.find((item) => item.product.id === selectedProduct.id)?.quantity || 0
+    : 0;
+
   const visibleProducts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
@@ -277,15 +529,61 @@ export default function ShopPage() {
     });
   }, [selectedCategory, products, searchTerm]);
 
-  async function handleCheckout(item: Product) {
-    try {
-      setCheckoutError("");
+  function addToCart(product: Product) {
+    if (!product.variationId) return;
 
-      if (!item.variationId) {
-        throw new Error("This item is missing a Square variation ID.");
+    setCartItems((currentItems) => {
+      const existingItem = currentItems.find((item) => item.product.id === product.id);
+      const stockCount = product.stockCount || 0;
+
+      if (existingItem) {
+        if (stockCount > 0 && existingItem.quantity >= stockCount) {
+          return currentItems;
+        }
+
+        return currentItems.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
       }
 
-      setCheckoutLoadingId(item.id);
+      return [...currentItems, { product, quantity: 1 }];
+    });
+
+    setIsCartOpen(true);
+  }
+
+  function decreaseCartQuantity(product: Product) {
+    setCartItems((currentItems) => {
+      const existingItem = currentItems.find((item) => item.product.id === product.id);
+
+      if (!existingItem) return currentItems;
+
+      if (existingItem.quantity <= 1) {
+        return currentItems.filter((item) => item.product.id !== product.id);
+      }
+
+      return currentItems.map((item) =>
+        item.product.id === product.id
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      );
+    });
+  }
+
+  function removeFromCart(product: Product) {
+    setCartItems((currentItems) =>
+      currentItems.filter((item) => item.product.id !== product.id)
+    );
+  }
+
+  async function checkoutCart() {
+    const checkoutWindow = window.open("", "_blank", "noopener,noreferrer");
+
+    try {
+      setCheckoutError("");
+      setIsCheckingOutCart(true);
 
       const response = await fetch("/api/square/create-checkout", {
         method: "POST",
@@ -293,8 +591,11 @@ export default function ShopPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          variationId: item.variationId,
-          itemName: item.name,
+          items: cartItems.map((item) => ({
+            variationId: item.product.variationId,
+            quantity: item.quantity,
+            itemName: item.product.name,
+          })),
         }),
       });
 
@@ -303,6 +604,7 @@ export default function ShopPage() {
       if (!contentType.includes("application/json")) {
         const text = await response.text();
         console.error("Non-JSON checkout response:", text);
+        checkoutWindow?.close();
 
         throw new Error(
           `Checkout route returned ${response.status}. This means /api/square/create-checkout is not being found or is returning an HTML error page.`
@@ -312,24 +614,47 @@ export default function ShopPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        checkoutWindow?.close();
         throw new Error(data?.error || "Unable to create checkout");
       }
 
       if (!data.checkoutUrl) {
+        checkoutWindow?.close();
         throw new Error("Square did not return a checkout link.");
       }
 
-      window.open(data.checkoutUrl, "_blank", "noopener,noreferrer");
+      if (checkoutWindow) {
+        checkoutWindow.location.href = data.checkoutUrl;
+        checkoutWindow.focus();
+      } else {
+        window.location.href = data.checkoutUrl;
+      }
     } catch (err: any) {
       setCheckoutError(err.message || "Unable to start checkout");
     } finally {
-      setCheckoutLoadingId(null);
+      setIsCheckingOutCart(false);
     }
   }
 
   return (
     <div className="min-h-screen bg-[#f7efe5] text-slate-900">
-      <ProductDescriptionModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+      <ProductDescriptionModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={addToCart}
+        cartQuantity={selectedProductCartQuantity}
+      />
+
+      <CartDrawer
+        isOpen={isCartOpen}
+        cartItems={cartItems}
+        onClose={() => setIsCartOpen(false)}
+        onIncrease={addToCart}
+        onDecrease={decreaseCartQuantity}
+        onRemove={removeFromCart}
+        onCheckout={checkoutCart}
+        isCheckingOut={isCheckingOutCart}
+      />
 
       <header className="sticky top-0 z-40 border-b-4 border-pink-500 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
@@ -342,6 +667,19 @@ export default function ShopPage() {
             <a href="/#hours" className="hover:text-pink-600">Hours</a>
             <a href="/#visit" className="hover:text-pink-600">Visit Us</a>
             <a href="/shop" className="font-black text-pink-600">Shop</a>
+
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-pink-100 bg-pink-50 text-pink-600 transition hover:bg-pink-100"
+              aria-label="Open cart"
+            >
+              <Icon name="cart" className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -right-2 -top-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-pink-600 px-1.5 text-xs font-black text-white">
+                  {cartCount}
+                </span>
+              )}
+            </button>
 
             <a
               href={INVOICE_URL}
@@ -472,9 +810,10 @@ export default function ShopPage() {
             <>
               <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {visibleProducts.map((item) => {
-                  const isCheckingOut = checkoutLoadingId === item.id;
-                  const canCheckout = Boolean(item.variationId) && !isCheckingOut;
                   const savingsPercent = getSavingsPercent(item);
+                  const cartQuantity = cartItems.find((cartItem) => cartItem.product.id === item.id)?.quantity || 0;
+                  const stockCount = item.stockCount || 0;
+                  const canAddMore = Boolean(item.variationId) && (stockCount <= 0 || cartQuantity < stockCount);
 
                   return (
                     <article
@@ -482,7 +821,10 @@ export default function ShopPage() {
                       className="group flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="flex w-full flex-col">
-                        <div className="relative overflow-hidden">
+                        <button
+                          onClick={() => setSelectedProduct(item)}
+                          className="relative overflow-hidden text-left"
+                        >
                           {item.image ? (
                             <img
                               src={item.image}
@@ -500,12 +842,17 @@ export default function ShopPage() {
                               Score {savingsPercent}% Off
                             </div>
                           )}
-                        </div>
+                        </button>
 
                         <div className="flex flex-1 flex-col p-5">
-                          <h3 className="min-h-[4.8rem] text-xl font-black leading-tight text-slate-950">
-                            {item.name}
-                          </h3>
+                          <button
+                            onClick={() => setSelectedProduct(item)}
+                            className="text-left"
+                          >
+                            <h3 className="min-h-[4.8rem] text-xl font-black leading-tight text-slate-950 transition hover:text-pink-600">
+                              {item.name}
+                            </h3>
+                          </button>
 
                           <div className="mt-3 min-h-[4.5rem]">
                             {item.description ? (
@@ -518,7 +865,7 @@ export default function ShopPage() {
                                   onClick={() => setSelectedProduct(item)}
                                   className="mt-2 text-sm font-black text-pink-600 transition hover:text-pink-700"
                                 >
-                                  View full description
+                                  View details
                                 </button>
                               </>
                             ) : (
@@ -539,15 +886,15 @@ export default function ShopPage() {
                             </p>
 
                             <button
-                              onClick={() => handleCheckout(item)}
-                              disabled={!canCheckout}
+                              onClick={() => addToCart(item)}
+                              disabled={!canAddMore}
                               className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 font-black transition ${
-                                canCheckout
+                                canAddMore
                                   ? "bg-teal-700 text-white hover:bg-teal-800"
                                   : "cursor-not-allowed bg-slate-300 text-slate-600"
                               }`}
                             >
-                              {isCheckingOut ? "Opening Checkout..." : "Reserve & Pay"}
+                              {cartQuantity > 0 ? "Add Another" : "Add to Cart"}
                             </button>
                           </div>
                         </div>
