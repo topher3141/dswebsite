@@ -8,6 +8,8 @@ export type Auction = {
   id: string;
   title: string;
   subtitle: string;
+  auctionLabel: string;
+  imageBadge: string;
   auctionUrl: string;
   imageUrl?: string;
   closesAt: string;
