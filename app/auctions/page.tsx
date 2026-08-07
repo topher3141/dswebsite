@@ -70,37 +70,38 @@ function isAuctionVisible(auction: Auction) {
 function PickupHours({ auction }: { auction: Auction }) {
   if (auction.pickupWindows && auction.pickupWindows.length > 0) {
     return (
-      <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50 p-4">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
-          Pickup Hours
-        </p>
+      <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50 p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="lg:max-w-xs">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
+              Pickup Hours
+            </p>
 
-        {auction.pickupText && (
-          <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
-            {auction.pickupText}
-          </p>
-        )}
+            {auction.pickupText && (
+              <p className="mt-1 text-sm font-bold leading-5 text-slate-700">
+                {auction.pickupText}
+              </p>
+            )}
+          </div>
 
-        <div className="mt-4 grid gap-3">
-          {auction.pickupWindows.map((window) => (
-            <div
-              key={`${window.day}-${window.date}`}
-              className="flex flex-col rounded-xl bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="text-sm font-black text-slate-950">
+          <div className="grid flex-1 gap-2 sm:grid-cols-3">
+            {auction.pickupWindows.map((window) => (
+              <div
+                key={`${window.day}-${window.date}`}
+                className="rounded-xl bg-white px-3 py-2 shadow-sm"
+              >
+                <p className="text-sm font-black leading-tight text-slate-950">
                   {window.day}
                 </p>
-                <p className="text-sm font-bold text-slate-500">
+                <p className="text-xs font-bold leading-tight text-slate-500">
                   {window.date}
                 </p>
+                <p className="mt-1 text-sm font-black leading-tight text-teal-800">
+                  {window.hours}
+                </p>
               </div>
-
-              <p className="mt-2 text-lg font-black text-teal-800 sm:mt-0">
-                {window.hours}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -109,11 +110,11 @@ function PickupHours({ auction }: { auction: Auction }) {
   if (!auction.pickupText) return null;
 
   return (
-    <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50 p-4">
+    <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50 p-4">
       <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
         Pickup
       </p>
-      <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
+      <p className="mt-1 text-sm font-bold leading-5 text-slate-700">
         {auction.pickupText}
       </p>
     </div>
@@ -160,15 +161,13 @@ function AuctionCard({ auction }: { auction: Auction }) {
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-[#fff8ef] p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-                Date
+                Starts Closing
               </p>
+
               <p className="mt-1 text-lg font-black leading-tight text-slate-950">
                 {closeDateParts.date}
               </p>
 
-              <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-                Time
-              </p>
               <p className="mt-1 text-lg font-black leading-tight text-pink-600">
                 {closeDateParts.time}
               </p>
@@ -234,7 +233,6 @@ export default function AuctionsPage() {
             <a href="/#difference" className="hover:text-pink-600">Why Us</a>
             <a href="/#hours" className="hover:text-pink-600">Hours</a>
             <a href="/#visit" className="hover:text-pink-600">Visit Us</a>
-            <a href="/shop" className="hover:text-pink-600">Shop</a>
             <a href="/auctions" className="font-black text-pink-600">Auctions</a>
 
             <a
