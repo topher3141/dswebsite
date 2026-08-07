@@ -258,36 +258,30 @@ export default function AuctionsPage() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden bg-white">
-          <div className="absolute inset-y-0 right-0 hidden w-[42%] bg-gradient-to-l from-[#ffd9ea] via-[#fff1f7] to-transparent lg:block" />
-          <div className="absolute -right-16 top-0 hidden h-72 w-72 rounded-full bg-pink-200/70 blur-3xl lg:block" />
+       <section className="relative overflow-hidden bg-white">
+  <div className="absolute inset-y-0 right-0 hidden w-[38%] bg-gradient-to-l from-[#ffd9ea] via-[#fff1f7] to-transparent lg:block" />
+  <div className="absolute -right-16 top-0 hidden h-56 w-56 rounded-full bg-pink-200/70 blur-3xl lg:block" />
 
-          <div className="relative mx-auto max-w-7xl px-5 py-12 lg:py-16">
-            <div className="max-w-4xl">
-              <div className="mb-4 inline-flex items-center gap-3 rounded-full bg-teal-100 px-5 py-2 text-xs font-black uppercase tracking-wide text-slate-950 shadow-sm">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-teal-600"></span>
-                </span>
-                <span>Deals & Steals Auctions</span>
-              </div>
+  <div className="relative mx-auto max-w-7xl px-5 py-8 lg:py-10">
+    <div className="max-w-4xl">
+      <div className="mb-3 inline-flex items-center gap-3 rounded-full bg-yellow-100 px-5 py-2 text-xs font-black uppercase tracking-wide text-slate-950 shadow-sm">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75"></span>
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
+        </span>
+        <span>Auctions are LIVE!</span>
+      </div>
 
-              <h1 className="text-4xl font-black leading-none tracking-tight text-slate-950 md:text-6xl">
-                Bid on limited-time deal drops.
-              </h1>
+      <h1 className="text-4xl font-black leading-none tracking-tight text-slate-950 md:text-5xl">
+        Bid on limited-time deal drops.
+      </h1>
 
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-700">
-                We are rolling out select auctions through our auction partner Rasmus. Browse upcoming auctions, register to bid, and pick up locally after the auction closes.
-              </p>
-
-              <div className="mt-7 flex flex-wrap gap-3 text-sm font-black text-slate-700">
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">🛒 Register & bid on Rasmus</span>
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">📍 Local pickup in Glen Burnie</span>
-                <span className="rounded-full bg-[#fff8ef] px-4 py-2">⏰ Limited-time auctions</span>
-              </div>
-            </div>
-          </div>
-        </section>
+      <p className="mt-4 max-w-3xl text-base leading-7 text-slate-700 md:text-lg">
+        We are rolling out select auctions through our auction partner Rasmus. Browse upcoming auctions, register to bid, and pick up during shopping hours after the auction closes.
+      </p>
+    </div>
+  </div>
+</section>
 
         <section className="mx-auto max-w-7xl px-5 py-10">
           <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
