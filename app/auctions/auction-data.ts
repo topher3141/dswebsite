@@ -39,7 +39,7 @@ export const auctions: Auction[] = [
       },
       {
         day: "Saturday",
-        date: "August 22",
+        date: "Aug 22",
         hours: "11 AM - 3 PM",
       },
     ],
