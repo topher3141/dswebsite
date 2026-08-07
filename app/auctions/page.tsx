@@ -140,15 +140,19 @@ function AuctionCard({ auction }: { auction: Auction }) {
             </div>
           )}
 
-          <div className="absolute left-5 top-5 rotate-[-2deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-white shadow-md">
-            Upcoming Auction
-          </div>
+          {auction.imageBadge && (
+            <div className="absolute left-5 top-5 rotate-[-2deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-white shadow-md">
+              {auction.imageBadge}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col p-6 md:p-8">
-          <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
-            Rasmus Auction
-          </p>
+          {auction.auctionLabel && (
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
+              {auction.auctionLabel}
+            </p>
+          )}
 
           <h2 className="mt-3 text-3xl font-black leading-tight text-slate-950 md:text-4xl">
             {auction.title}
@@ -258,30 +262,30 @@ export default function AuctionsPage() {
       </header>
 
       <main>
-       <section className="relative overflow-hidden bg-white">
-  <div className="absolute inset-y-0 right-0 hidden w-[38%] bg-gradient-to-l from-[#ffd9ea] via-[#fff1f7] to-transparent lg:block" />
-  <div className="absolute -right-16 top-0 hidden h-56 w-56 rounded-full bg-pink-200/70 blur-3xl lg:block" />
+        <section className="relative overflow-hidden bg-white">
+          <div className="absolute inset-y-0 right-0 hidden w-[38%] bg-gradient-to-l from-[#ffd9ea] via-[#fff1f7] to-transparent lg:block" />
+          <div className="absolute -right-16 top-0 hidden h-56 w-56 rounded-full bg-pink-200/70 blur-3xl lg:block" />
 
-  <div className="relative mx-auto max-w-7xl px-5 py-8 lg:py-10">
-    <div className="max-w-4xl">
-      <div className="mb-3 inline-flex items-center gap-3 rounded-full bg-yellow-100 px-5 py-2 text-xs font-black uppercase tracking-wide text-slate-950 shadow-sm">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75"></span>
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
-        </span>
-        <span>Auctions are LIVE!</span>
-      </div>
+          <div className="relative mx-auto max-w-7xl px-5 py-8 lg:py-10">
+            <div className="max-w-4xl">
+              <div className="mb-3 inline-flex items-center gap-3 rounded-full bg-yellow-100 px-5 py-2 text-xs font-black uppercase tracking-wide text-slate-950 shadow-sm">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
+                </span>
+                <span>Auctions are LIVE!</span>
+              </div>
 
-      <h1 className="text-4xl font-black leading-none tracking-tight text-slate-950 md:text-5xl">
-        Bid on limited-time deal drops.
-      </h1>
+              <h1 className="text-4xl font-black leading-none tracking-tight text-slate-950 md:text-5xl">
+                Bid on limited-time deal drops.
+              </h1>
 
-      <p className="mt-4 max-w-3xl text-base leading-7 text-slate-700 md:text-lg">
-        We are rolling out select auctions through our auction partner Rasmus. Browse upcoming auctions, register to bid, and pick up during shopping hours after the auction closes.
-      </p>
-    </div>
-  </div>
-</section>
+              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-700 md:text-lg">
+                We are rolling out select auctions through our auction partner Rasmus. Browse upcoming auctions, register to bid, and pick up during shopping hours after the auction closes.
+              </p>
+            </div>
+          </div>
+        </section>
 
         <section className="mx-auto max-w-7xl px-5 py-10">
           <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
