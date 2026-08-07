@@ -16,7 +16,7 @@ export const auctions: Auction[] = [
     title: "Overstock Outdoor Living, Appliances & Home Goods",
     subtitle: "Brand new, open-box, and overstock finds through our auction partner Rasmus.",
     auctionUrl: "https://www.rasmus.com/auctions/bH7jaBXmN8qTLbHskz2x/a/auction",
-    imageUrl: "https://i.imgur.com/1M5YhOV.jpeg",
+    imageUrl: "https://storage.googleapis.com/auction-engine-temp/bH7jaBXmN8qTLbHskz2x/auction-0.jpg",
     closesAt: "2026-08-18T15:07:00-04:00",
     pickupText: "Pickup is Thursday through Saturday after the auction closes. Please follow the pickup window listed on Rasmus for this auction.",
     location: "Glen Burnie, MD 21061",
