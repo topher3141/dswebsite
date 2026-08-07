@@ -21,7 +21,7 @@ export const auctions: Auction[] = [
   {
     id: "rasmus-r260551",
     title: "Overstock Outdoor Living, Appliances & Home Goods",
-    subtitle: "Brand new, open-box, and overstock finds through our auction partner Rasmus.",
+    subtitle: "Bid on a wide variety of home goods, small appliances, patio finds, luggage, tech accessories, and more.",
     auctionUrl: "https://www.rasmus.com/auctions/bH7jaBXmN8qTLbHskz2x/a/auction",
     imageUrl: "https://storage.googleapis.com/auction-engine-temp/bH7jaBXmN8qTLbHskz2x/auction-0.jpg",
     closesAt: "2026-08-18T11:07:00-04:00",
