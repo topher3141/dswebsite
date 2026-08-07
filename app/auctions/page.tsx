@@ -323,11 +323,11 @@ export default function AuctionsPage() {
         <section id="faq" className="bg-white px-5 py-14">
           <div className="mx-auto max-w-5xl">
             <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
-              Questions
+              LEARN MORE
             </p>
 
             <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">
-              Auction FAQ
+              FAQs
             </h2>
 
             <div className="mt-8 grid gap-4">
@@ -336,7 +336,7 @@ export default function AuctionsPage() {
                   Why an auction?
                 </summary>
                 <p className="mt-3 leading-7 text-slate-700">
-                  Auctions give customers a fun way to score deals on limited inventory. Instead of a fixed retail shelf price, customers can bid on the items they want and let the auction determine the final price.
+                  Auctions help us move excess inventory and give customers a fun way to score deals. Instead of a fixed retail price, customers can bid on the items they want and let the auction determine the final price.
                 </p>
               </details>
 
@@ -363,7 +363,7 @@ export default function AuctionsPage() {
                   How does pickup work?
                 </summary>
                 <p className="mt-3 leading-7 text-slate-700">
-                  Auctions close on Tuesday, and pickup is typically available Thursday through Saturday after the auction closes. Please review the pickup window listed on the Rasmus auction page for the exact dates and times for each auction.
+                  Pickup is typically available during regular shopping hours, Thursday through Saturday, after the auction closes. Please review the pickup window listed on the auction page for the exact dates and times for each auction.
                 </p>
               </details>
 
@@ -372,7 +372,7 @@ export default function AuctionsPage() {
                   Can I pick up during regular store hours?
                 </summary>
                 <p className="mt-3 leading-7 text-slate-700">
-                  Pickup is generally coordinated around our regular Deals & Steals pickup days, but each auction may have its own listed pickup window. Always follow the pickup dates and times shown on the Rasmus auction page.
+                  Pickup is generally coordinated around our regular Deals & Steals pickup days, but each auction may have its own listed pickup window. Always follow the pickup dates and times shown on the auction page.
                 </p>
               </details>
 
@@ -381,7 +381,7 @@ export default function AuctionsPage() {
                   Are auction items final sale?
                 </summary>
                 <p className="mt-3 leading-7 text-slate-700">
-                  Auction purchases are handled through Rasmus and are subject to the terms listed for that specific auction. Please read the auction notes before bidding.
+                  Typically yes. Auction purchases are subject to the terms listed for that specific auction. Please read the auction notes before bidding.
                 </p>
               </details>
             </div>
