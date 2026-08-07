@@ -29,12 +29,12 @@ export const auctions: Auction[] = [
     pickupWindows: [
       {
         day: "Thursday",
-        date: "8/20",
+        date: "Aug 20",
         hours: "1 PM - 7 PM",
       },
       {
         day: "Friday",
-        date: "8/21",
+        date: "Aug 21",
         hours: "1 PM - 7 PM",
       },
       {
