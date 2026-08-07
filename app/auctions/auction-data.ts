@@ -34,12 +34,12 @@ export const auctions: Auction[] = [
       },
       {
         day: "Friday",
-        date: "August 21, 2026",
+        date: "8/21",
         hours: "1 PM - 7 PM",
       },
       {
         day: "Saturday",
-        date: "August 22, 2026",
+        date: "August 22",
         hours: "11 AM - 3 PM",
       },
     ],
