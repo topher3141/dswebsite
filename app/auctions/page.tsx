@@ -287,10 +287,10 @@ export default function AuctionsPage() {
           <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">
-                Current Auctions
+                Upcoming Auctions
               </p>
               <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">
-                Upcoming Deal Drops
+                Scroll. Bid. Save.
               </h2>
             </div>
 
