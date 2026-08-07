@@ -41,15 +41,22 @@ function Icon({ name, className = "" }: { name: string; className?: string }) {
   return null;
 }
 
-function formatCloseDate(closesAt: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  }).format(new Date(closesAt));
+function getAuctionDateParts(closesAt: string) {
+  const closeDate = new Date(closesAt);
+
+  return {
+    date: new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }).format(closeDate),
+    time: new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+    }).format(closeDate),
+  };
 }
 
 function isAuctionVisible(auction: Auction) {
@@ -60,7 +67,62 @@ function isAuctionVisible(auction: Auction) {
   return new Date() < hideAfter;
 }
 
+function PickupHours({ auction }: { auction: Auction }) {
+  if (auction.pickupWindows && auction.pickupWindows.length > 0) {
+    return (
+      <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
+          Pickup Hours
+        </p>
+
+        {auction.pickupText && (
+          <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
+            {auction.pickupText}
+          </p>
+        )}
+
+        <div className="mt-4 grid gap-3">
+          {auction.pickupWindows.map((window) => (
+            <div
+              key={`${window.day}-${window.date}`}
+              className="flex flex-col rounded-xl bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p className="text-sm font-black text-slate-950">
+                  {window.day}
+                </p>
+                <p className="text-sm font-bold text-slate-500">
+                  {window.date}
+                </p>
+              </div>
+
+              <p className="mt-2 text-lg font-black text-teal-800 sm:mt-0">
+                {window.hours}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!auction.pickupText) return null;
+
+  return (
+    <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
+        Pickup
+      </p>
+      <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
+        {auction.pickupText}
+      </p>
+    </div>
+  );
+}
+
 function AuctionCard({ auction }: { auction: Auction }) {
+  const closeDateParts = getAuctionDateParts(auction.closesAt);
+
   return (
     <article className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <div className="grid gap-0 lg:grid-cols-[.9fr_1.1fr]">
@@ -98,10 +160,17 @@ function AuctionCard({ auction }: { auction: Auction }) {
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-[#fff8ef] p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-                Starts Closing
+                Date
               </p>
-              <p className="mt-1 text-lg font-black text-slate-950">
-                {formatCloseDate(auction.closesAt)}
+              <p className="mt-1 text-lg font-black leading-tight text-slate-950">
+                {closeDateParts.date}
+              </p>
+
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                Time
+              </p>
+              <p className="mt-1 text-lg font-black leading-tight text-pink-600">
+                {closeDateParts.time}
               </p>
             </div>
 
@@ -109,20 +178,13 @@ function AuctionCard({ auction }: { auction: Auction }) {
               <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
                 Pickup Location
               </p>
-              <p className="mt-1 text-lg font-black text-slate-950">
+              <p className="mt-1 text-lg font-black leading-tight text-slate-950">
                 {auction.location}
               </p>
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
-              Pickup
-            </p>
-            <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
-              {auction.pickupText}
-            </p>
-          </div>
+          <PickupHours auction={auction} />
 
           {auction.notes && (
             <p className="mt-4 text-sm font-bold leading-6 text-slate-500">
