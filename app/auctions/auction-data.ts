@@ -18,7 +18,7 @@ export const auctions: Auction[] = [
     auctionUrl: "https://www.rasmus.com/auctions/bH7jaBXmN8qTLbHskz2x/a/auction",
     imageUrl: "https://storage.googleapis.com/auction-engine-temp/bH7jaBXmN8qTLbHskz2x/auction-0.jpg",
     closesAt: "2026-08-18T11:07:00-04:00",
-    pickupText: "Pickup is during our regular shopping hours, Thursday through Saturday after the auction closes. Please follow the pickup window listed for this auction.",
+    pickupText: "Pickup is during our regular shopping hours. Thursday August 20, 2026, 1pm to 7pm, Friday August 21, 2026, 1pm to 7pm, Saturday August 22, 2026, 11am to 3pm",
     location: "510 McCormick Drive Suite B Glen Burnie, MD 21061",
     notes: "18% buyer’s premium applies through Rasmus. All items are overstock/open-box items.",
   },
