@@ -1,28 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
 export default function JoinTeamSiteLink() {
   const pathname = usePathname();
-  const [nav, setNav] = useState<HTMLElement | null>(null);
 
-  useEffect(() => {
-    if (pathname !== "/") {
-      setNav(null);
-      return;
-    }
+  if (pathname !== "/") return null;
 
-    setNav(document.querySelector<HTMLElement>("header nav"));
-  }, [pathname]);
-
-  if (pathname !== "/" || !nav) return null;
-
-  return createPortal(
-    <a href="/join-our-team" className="transition hover:text-pink-600">
-      Join Our Team
-    </a>,
-    nav
+  return (
+    <div className="border-b border-teal-200 bg-teal-50 px-4 py-2.5 text-center text-sm font-bold text-slate-800">
+      Interested in working with us?{" "}
+      <a
+        href="/join-our-team"
+        className="font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:text-pink-700"
+      >
+        Join Our Team →
+      </a>
+    </div>
   );
 }
