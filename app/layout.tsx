@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import JoinTeamSiteLink from "./JoinTeamSiteLink";
 
 export const metadata: Metadata = {
   title: "Deals & Steals | Glen Burnie Discount Store",
@@ -18,7 +19,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <JoinTeamSiteLink />
+        {children}
+      </body>
     </html>
   );
 }
