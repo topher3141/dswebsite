@@ -41,15 +41,15 @@ const ROLES = [
     title: "Retail Team Member",
     type: "Part-Time / Full-Time",
     description:
-      "Help customers, stock merchandise, organize the sales floor, price product, and keep the store ready for the next rush of deals.",
-    tags: ["Customer Service", "Stocking", "Merchandising"],
+      "Help customers, process and price incoming product, stock merchandise, organize the sales floor, and keep the store ready for the next rush of deals.",
+    tags: ["Customer Service", "Product Processing", "Stocking", "Merchandising"],
   },
   {
-    title: "Warehouse / Stock Team",
+    title: "E-Commerce Team Member",
     type: "Part-Time / Full-Time",
     description:
-      "Unload, sort, organize, price, and move merchandise from incoming truckloads into the warehouse and onto the sales floor.",
-    tags: ["Warehouse", "Truckloads", "Inventory"],
+      "Photograph and list products online, write accurate descriptions, manage online inventory and orders, and help keep our e-commerce channels current and organized.",
+    tags: ["Online Listings", "Product Photography", "Order Fulfillment"],
   },
 ];
 
