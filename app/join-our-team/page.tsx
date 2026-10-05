@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import InterestForm from "./InterestForm";
 
-const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
 const LOGO_URL = "https://i.imgur.com/euamaJ6.png";
 
 export const metadata: Metadata = {
@@ -111,15 +111,9 @@ export default function JoinOurTeamPage() {
           </a>
 
           <nav className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-700 md:gap-6">
-            <a href="/#difference" className="transition hover:text-pink-600">
-              Why Us
-            </a>
-            <a href="/#hours" className="transition hover:text-pink-600">
-              Hours
-            </a>
-            <a href="/#visit" className="transition hover:text-pink-600">
-              Visit Us
-            </a>
+            <a href="/#difference" className="transition hover:text-pink-600">Why Us</a>
+            <a href="/#hours" className="transition hover:text-pink-600">Hours</a>
+            <a href="/#visit" className="transition hover:text-pink-600">Visit Us</a>
             <a
               href="#roles"
               className="rounded-full bg-pink-600 px-4 py-2 text-white shadow-sm transition hover:bg-pink-700"
@@ -172,14 +166,10 @@ export default function JoinOurTeamPage() {
               <div className="relative overflow-hidden rounded-[2.5rem] border-4 border-slate-950 bg-slate-950 p-7 text-white shadow-2xl sm:p-9">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-black uppercase tracking-[0.2em] text-teal-300">
-                      Deals &amp; Steals
-                    </p>
+                    <p className="text-sm font-black uppercase tracking-[0.2em] text-teal-300">Deals &amp; Steals</p>
                     <h2 className="mt-2 text-3xl font-black">Not typical retail.</h2>
                   </div>
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-pink-500 text-3xl">
-                    📦
-                  </div>
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-pink-500 text-3xl">📦</div>
                 </div>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -300,35 +290,24 @@ export default function JoinOurTeamPage() {
         <section id="apply" className="scroll-mt-28 bg-[#f7efe5] py-16 md:py-24">
           <div className="mx-auto max-w-5xl px-5">
             <div className="overflow-hidden rounded-[2.5rem] border-4 border-slate-950 bg-white shadow-xl">
-              <div className="grid lg:grid-cols-[1.1fr_.9fr]">
+              <div className="grid lg:grid-cols-[1.35fr_.65fr]">
                 <div className="p-8 sm:p-10 lg:p-12">
                   <p className="text-sm font-black uppercase tracking-[0.2em] text-pink-600">Interested?</p>
-                  <h2 className="mt-3 text-4xl font-black tracking-tight">Tell us you want to join the team.</h2>
+                  <h2 className="mt-3 text-4xl font-black tracking-tight">Tell us a little about yourself.</h2>
                   <p className="mt-5 text-lg leading-8 text-slate-600">
-                    Hiring needs can change quickly. If one of these roles sounds like a fit, reach out and let us know
-                    what kind of work you are interested in.
+                    Fill out the short form below. This is not a formal application — it just gives us enough information to reach out if there is a good fit.
                   </p>
-                  <a
-                    href={FACEBOOK_GROUP_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-7 inline-flex items-center gap-2 rounded-full bg-pink-600 px-6 py-3.5 font-black text-white shadow-lg shadow-pink-200 transition hover:-translate-y-0.5 hover:bg-pink-700"
-                  >
-                    Connect With Us on Facebook
-                    <ArrowIcon />
-                  </a>
-                  <p className="mt-4 text-sm font-semibold text-slate-500">
-                    Prefer in person? Stop by the store during regular hours and ask about current opportunities.
-                  </p>
+                  <InterestForm />
                 </div>
 
                 <div className="flex min-h-72 items-center justify-center bg-teal-300 p-8 text-center sm:p-10">
                   <div>
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-white text-4xl shadow-lg">
-                      👋
-                    </div>
-                    <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-teal-950/70">Come say hi</p>
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-white text-4xl shadow-lg">👋</div>
+                    <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-teal-950/70">Get in touch</p>
                     <p className="mt-2 text-3xl font-black leading-tight text-slate-950">Great people make great deals happen.</p>
+                    <p className="mt-4 text-sm font-bold leading-6 text-teal-950/75">
+                      No résumé required. Just tell us who you are, what role interests you, and when you&apos;re available.
+                    </p>
                   </div>
                 </div>
               </div>
