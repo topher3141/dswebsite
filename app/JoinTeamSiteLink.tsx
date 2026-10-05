@@ -14,16 +14,13 @@ export default function JoinTeamSiteLink() {
       return;
     }
 
-    setNav(document.querySelector("header nav"));
+    setNav(document.querySelector<HTMLElement>("header nav"));
   }, [pathname]);
 
   if (pathname !== "/" || !nav) return null;
 
   return createPortal(
-    <a
-      href="/join-our-team"
-      className="transition hover:text-pink-600"
-    >
+    <a href="/join-our-team" className="transition hover:text-pink-600">
       Join Our Team
     </a>,
     nav
