@@ -1,12 +1,24 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
 export default function InterestForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    if (!siteKey || document.querySelector('script[data-turnstile-script="true"]')) return;
+
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    script.async = true;
+    script.defer = true;
+    script.dataset.turnstileScript = "true";
+    document.head.appendChild(script);
+  }, [siteKey]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,6 +45,11 @@ export default function InterestForm() {
       setStatus("success");
       setMessage("Thanks! We received your information and will be in touch if there is a good fit.");
       form.reset();
+
+      if (typeof window !== "undefined" && "turnstile" in window) {
+        const turnstile = (window as typeof window & { turnstile?: { reset: () => void } }).turnstile;
+        turnstile?.reset();
+      }
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
@@ -108,6 +125,19 @@ export default function InterestForm() {
         <input name="consent" value="yes" type="checkbox" required className="mt-1 h-4 w-4 rounded border-slate-300" />
         <span>I&apos;m okay with Deals &amp; Steals contacting me about employment opportunities.</span>
       </label>
+
+      {siteKey ? (
+        <div className="pt-1">
+          <div className="cf-turnstile" data-sitekey={siteKey} data-theme="light" />
+          <p className="mt-2 text-xs font-semibold text-slate-500">
+            Protected against automated submissions by Cloudflare Turnstile.
+          </p>
+        </div>
+      ) : (
+        <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+          Bot protection is not configured yet.
+        </p>
+      )}
 
       <button
         type="submit"

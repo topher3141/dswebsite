@@ -23,6 +23,31 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
+async function verifyTurnstile(token: string, remoteIp: string | null) {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+
+  if (!secret) {
+    return { success: false, configurationMissing: true };
+  }
+
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      secret,
+      response: token,
+      ...(remoteIp ? { remoteip: remoteIp } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    return { success: false, configurationMissing: false };
+  }
+
+  const result = (await response.json()) as { success?: boolean };
+  return { success: result.success === true, configurationMissing: false };
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -35,6 +60,7 @@ export async function POST(request: Request) {
     const availability = clean(body.availability, MAX_LENGTHS.availability);
     const experience = clean(body.experience, MAX_LENGTHS.experience);
     const consent = body.consent === "yes";
+    const turnstileToken = clean(body["cf-turnstile-response"], 2500);
 
     if (!name || !phone || !email || !role || !employmentPreference || !availability || !consent) {
       return NextResponse.json({ error: "Please complete all required fields." }, { status: 400 });
@@ -42,6 +68,29 @@ export async function POST(request: Request) {
 
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+    }
+
+    if (!turnstileToken) {
+      return NextResponse.json({ error: "Please complete the bot verification and try again." }, { status: 400 });
+    }
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const remoteIp = forwardedFor?.split(",")[0]?.trim() || null;
+    const verification = await verifyTurnstile(turnstileToken, remoteIp);
+
+    if (verification.configurationMissing) {
+      console.error("TURNSTILE_SECRET_KEY is not configured.");
+      return NextResponse.json(
+        { error: "The form is temporarily unavailable. Please try again later." },
+        { status: 503 }
+      );
+    }
+
+    if (!verification.success) {
+      return NextResponse.json(
+        { error: "Bot verification failed. Please refresh the page and try again." },
+        { status: 403 }
+      );
     }
 
     const apiKey = process.env.RESEND_API_KEY;
