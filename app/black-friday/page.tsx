@@ -76,8 +76,8 @@ export default function BlackFridayPage() {
           <div className="text-center md:text-left">
             <p className="inline-block rounded-full bg-yellow-300 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-black">🎁 Free daily giveaway</p>
             <h3 className="mt-4 text-3xl font-black uppercase leading-tight text-white sm:text-4xl">FREE CHRISTMAS <span className="text-[#35f1e0]">SQUISHY CUBE!</span></h3>
-            <p className="mt-3 text-lg font-bold leading-snug text-white">For the <span className="text-[#ff3b98]">first 50 customers</span> each day — Thursday, Friday & Saturday!</p>
-            <p className="mt-3 text-xs text-white/60">One per eligible customer per day. Limited quantities; while supplies last.</p>
+            <p className="mt-3 text-lg font-bold leading-snug text-white">The <span className="text-[#ff3b98]">first 50 customers</span> in line or through the door each day — Thursday, Friday & Saturday — receive a giveaway coupon!</p>
+            <p className="mt-3 text-xs text-white/60">Purchase required. Redeem your coupon at checkout to receive your free Christmas squishy cube. One coupon per customer per day; first 50 each day, while supplies last.</p>
           </div>
         </div>
       </section>
@@ -87,7 +87,7 @@ export default function BlackFridayPage() {
           <span className="rounded-full bg-pink-600 px-5 py-2 text-xs font-black uppercase tracking-widest">{revealed ? "Saturday's big reveal" : "Something bigger is coming"}</span>
           <div className="mt-7 text-5xl">⚡</div>
           <h2 className="mt-5 text-4xl font-black leading-tight md:text-6xl">{revealed ? "SATURDAY: 50% OFF!" : "SATURDAY SURPRISE!"}</h2>
-          <p className="mt-5 text-lg text-slate-200">{revealed ? "Saturday only: 50% off almost everything! Clothing stays $3 and shoes stay $5. Blue-tag merchandise excluded." : "We're saving an extra-big clearance surprise for Saturday. Check back Friday evening to see what's changing!"}</p>
+          <p className="mt-5 text-lg text-slate-200">{revealed ? "Saturday only: 50% off almost everything! Clothing stays $3 and shoes stay $5. Blue-tag merchandise excluded." : "We're saving an extra-big clearance surprise for Saturday."}</p>
           <div className="mt-8 rounded-[2rem] border-2 border-teal-400 bg-[#11131b] p-7 text-white">
             <p className="text-sm font-black uppercase tracking-widest text-pink-400">{revealed ? "Saturday's deal is live" : "Big reveal"}</p>
             <p className="mt-3 text-2xl font-black leading-tight sm:text-3xl">{revealed ? "50% OFF ALMOST EVERYTHING" : "FRIDAY AT 8 PM"}</p>
