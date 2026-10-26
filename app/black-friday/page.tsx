@@ -77,8 +77,9 @@ export default function BlackFridayPage() {
         <div className="pointer-events-none absolute -right-20 bottom-0 h-60 w-60 rounded-full bg-teal-400/20 blur-3xl" />
         <div className="relative mx-auto max-w-5xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-yellow-300 px-5 py-2 text-xs font-black uppercase tracking-wider text-black sm:text-sm">🎁 FREE HOLIDAY GIVEAWAY 🎁</div>
-          <h2 className="mx-auto mt-6 max-w-4xl text-[clamp(2.5rem,7vw,5.5rem)] font-black uppercase leading-[1.04] tracking-tight text-white">FREE CHRISTMAS <span className="text-[#35f1e0]">NEEDOH!</span></h2>
-          <p className="mx-auto mt-5 max-w-3xl text-xl font-bold leading-snug text-white sm:text-3xl">The <span className="text-[#ff3b98]">FIRST 50 CUSTOMERS</span> each day get a FREE Christmas NeeDoh!</p>
+          <h2 className="mx-auto mt-6 max-w-4xl text-[clamp(2.5rem,7vw,5.5rem)] font-black uppercase leading-[1.04] tracking-tight text-white">FREE CHRISTMAS <span className="text-[#35f1e0]">SQUISHY CUBE!</span></h2>
+          <div className="mx-auto mt-7 max-w-md overflow-hidden rounded-2xl border-4 border-pink-500 bg-white p-2 shadow-[0_0_40px_rgba(236,72,153,.25)]"><img src="/images/christmas-needoh.jpg" alt="Three colorful Christmas-themed squishy cubes available in the giveaway" className="aspect-square w-full rounded-xl object-cover" /></div>
+          <p className="mx-auto mt-7 max-w-3xl text-xl font-bold leading-snug text-white sm:text-3xl">The <span className="text-[#ff3b98]">FIRST 50 CUSTOMERS</span> each day get a FREE Christmas Squishy Cube!</p>
           <div className="mx-auto mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
             {["THURSDAY • NOV 26","FRIDAY • NOV 27","SATURDAY • NOV 28"].map(day => <div key={day} className="rounded-xl border border-teal-400/50 bg-black/40 px-4 py-5"><div className="text-3xl">🎄</div><p className="mt-2 text-sm font-black tracking-wide text-white">{day}</p><p className="mt-1 text-xs font-bold uppercase text-teal-300">First 50 customers</p></div>)}
           </div>
