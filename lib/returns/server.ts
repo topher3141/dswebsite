@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { NextRequest } from "next/server";
-import { Claim } from "./policy";
+import { Claim, money, reference, STATUS_LABELS } from "./policy";
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -141,6 +141,44 @@ export async function queueEmail(
     }),
   });
 }
+export const RETURNS_SENDER = "Deals & Steals Returns <returns@dealsandstealsmd.com>";
+export function adminNotification(claim: Claim, text: string) {
+  const selected = claim.square?.items.find((item) => item.uid === claim.square?.selectedUid);
+  return {
+    subject: claim.version === 1 ? "New return request" : "Return request update",
+    body: [
+      text,
+      "",
+      `Claim: ${reference(claim.id)}`,
+      `Status: ${STATUS_LABELS[claim.status]}`,
+      "",
+      `Customer: ${claim.name}`,
+      `Email: ${claim.email}`,
+      `Phone: ${claim.phone}`,
+      "",
+      `Item: ${claim.itemName}`,
+      `Price paid before tax: ${money(claim.itemPrice)}`,
+      `Issue: ${claim.issue === "defective" ? "Defective item" : "Not as described"}`,
+      `Problem description: ${claim.description}`,
+      "",
+      `Receipt number: ${claim.receiptNumber}`,
+      `Receipt / payment date: ${claim.receiptDate}`,
+      `Receipt total including tax: ${money(claim.receiptTotal)}`,
+      `Purchase type: ${claim.purchaseType === "online" ? "Prepaid online" : "Paid in person"}`,
+      ...(claim.purchaseType === "online" ? [`Pickup date: ${claim.pickupDate}`] : []),
+      "Sold as is: No (customer confirmed)",
+      `Late request: ${claim.late ? "Yes — exception needs review" : "No"}`,
+      ...(claim.late ? [`Exception reason: ${claim.exceptionReason}`] : []),
+      `Square receipt: ${claim.square ? "Matched" : "Manual verification needed"}`,
+      ...(selected ? [`Selected receipt entry: ${selected.name} · Qty ${selected.quantity} · ${money(selected.netAmount)} before tax for the line`] : []),
+      `Files: ${claim.attachments.map((file) => `${file.purpose}: ${file.name}`).join(", ") || "None"}`,
+      ...(claim.approvedAmount !== undefined ? [`Approved credit before tax: ${money(claim.approvedAmount)}`] : []),
+      ...(claim.returnBy ? [`Return deadline: ${claim.returnBy}`] : []),
+      "",
+      `Review claim and view photos: ${siteUrl()}/returns/admin?claim=${encodeURIComponent(claim.id)}`,
+    ].join("\n"),
+  };
+}
 export async function flushEmails(onlyKey?: string) {
   const rows = await database(
     "returns_outbox?sent_at=is.null&order=created_at.asc&limit=10" +
@@ -171,7 +209,7 @@ export async function flushEmails(onlyKey?: string) {
           "Idempotency-Key": row.idempotency_key,
         },
         body: JSON.stringify({
-          from: process.env.RETURNS_FROM_EMAIL || env("JOBS_FROM_EMAIL"),
+          from: RETURNS_SENDER,
           to: [row.recipient],
           reply_to: activeAdmins,
           subject: row.subject,
