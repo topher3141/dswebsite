@@ -472,7 +472,9 @@ export default function ReturnsPage() {
             </span>
           </label>
           <Turnstile onToken={setToken} reset={reset} />
-          <p className="rp-help">Complete verification to submit your claim.</p>
+          {!token && asIs !== "yes" && (
+            <p className="rp-help">The submit button becomes available after the verification above is complete.</p>
+          )}
           {error && (
             <p className="rp-notice error" role="alert">
               {error}
