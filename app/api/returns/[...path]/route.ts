@@ -127,16 +127,30 @@ async function delivery(key?: string) {
     return { failed: 1 };
   }
 }
-async function attachmentList(form: FormData, id: string, initial = false) {
+async function attachmentList(
+  form: FormData,
+  id: string,
+  initial = false,
+  requireReceipt = true,
+) {
   const result: Claim["attachments"] = [];
   const receipt = form.get("receipt"),
     items = form
       .getAll("photos")
       .filter((f) => f instanceof File && f.size > 0) as File[];
-  if (initial && (!(receipt instanceof File) || !receipt.size || !items.length))
+  if (
+    initial &&
+    requireReceipt &&
+    (!(receipt instanceof File) || !receipt.size)
+  )
     throw new HttpError(
       400,
-      "Attach your receipt and at least one item photo.",
+      "Look up your receipt again or attach a receipt photo or PDF for manual review.",
+    );
+  if (initial && !items.length)
+    throw new HttpError(
+      400,
+      "Attach at least one photo of the item and problem.",
     );
   const files: { file: File; purpose: "receipt" | "item" | "evidence" }[] = [
     ...(initial && receipt instanceof File && receipt.size
@@ -395,7 +409,7 @@ export async function POST(req: NextRequest, context: Context) {
           },
         ],
       };
-      claim.attachments = await attachmentList(form, id, true);
+      claim.attachments = await attachmentList(form, id, true, !square);
       try {
         await persist(
           claim,

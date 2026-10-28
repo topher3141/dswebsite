@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isLate, POLICY, today } from "../../lib/returns/policy";
 import { api, post, Turnstile } from "./shared";
 export default function ReturnsPage() {
@@ -27,6 +27,20 @@ export default function ReturnsPage() {
   } catch {
     /* incomplete date */
   }
+  useEffect(() => {
+    if (!match?.proof) return;
+    const timer = setTimeout(
+      () => {
+        setMatch(null);
+        setSelected("");
+        setError(
+          "Your receipt match expired. Look it up again or attach a receipt for manual review.",
+        );
+      },
+      30 * 60 * 1000,
+    );
+    return () => clearTimeout(timer);
+  }, [match]);
   function changeReceipt() {
     setMatch(null);
     setSelected("");
@@ -375,16 +389,26 @@ export default function ReturnsPage() {
               placeholder="Tell us what is wrong and what you expected. Include any troubleshooting you tried."
             />
           </label>
+          {match?.proof && (
+            <p className="rp-notice">
+              Your Square receipt is on file. No receipt upload is needed.
+            </p>
+          )}
           <div className="rp-grid rp-field">
-            <label>
-              Receipt photo or PDF
-              <input
-                name="receipt"
-                type="file"
-                required
-                accept="image/jpeg,image/png,image/webp,application/pdf"
-              />
-            </label>
+            {!match?.proof && (
+              <label>
+                Receipt photo or PDF
+                <input
+                  name="receipt"
+                  type="file"
+                  required
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                />
+                <span className="rp-help">
+                  Required only when we cannot match your Square receipt.
+                </span>
+              </label>
+            )}
             <label>
               Photos of the item and problem
               <input

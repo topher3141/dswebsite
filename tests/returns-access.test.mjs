@@ -15,6 +15,7 @@ function runtime(fetcher) {
       RETURNS_SUPABASE_SERVICE_ROLE_KEY: "test-service-key",
       RETURNS_LINK_SECRET: "test-link-secret",
       RETURNS_CRON_SECRET: "test-cron-secret",
+      TURNSTILE_SECRET_KEY: "test-turnstile-secret",
     },
   };
   function load(file) {
@@ -274,4 +275,91 @@ test("receipt proofs reject tampering, expiration and changed receipt fields", (
     ),
     undefined,
   );
+});
+
+test("matched receipts can submit without an upload, while missing or invalid matches require one", async () => {
+  for (const matched of [true, false, "tampered"]) {
+    let saved;
+    const app = runtime(async (url, init) => {
+      const u = new URL(url);
+      if (u.hostname === "challenges.cloudflare.com")
+        return response({ success: true });
+      if (u.pathname.endsWith("/rpc/returns_rate_limit")) return response(true);
+      if (u.pathname.endsWith("/returns_claims")) return response([]);
+      if (u.pathname.endsWith("/returns_admins"))
+        return response([{ email: "chris@dealsandstealsmd.com" }]);
+      if (u.pathname.includes("/storage/v1/object/")) return response({});
+      if (u.pathname.endsWith("/rpc/returns_save_claim")) {
+        saved = JSON.parse(init.body);
+        return response(true);
+      }
+      if (u.pathname.endsWith("/returns_outbox")) return response([]);
+      throw new Error("Unexpected call: " + u.pathname);
+    });
+    const date = app.load("lib/returns/policy.ts").today();
+    const square = app.load("lib/returns/square.ts");
+    const input = {
+      id,
+      requestKey: "a".repeat(64),
+      turnstile: "test",
+      name: "Customer",
+      email: "customer@example.com",
+      phone: "555-555-0100",
+      purchaseType: "pos",
+      receiptDate: date,
+      receiptNumber: "AB12",
+      receiptTotal: "10.60",
+      itemPrice: "10.00",
+      itemName: "Test item",
+      issue: "defective",
+      description: "Broken item",
+      asIs: "no",
+      consent: "yes",
+    };
+    if (matched)
+      input.proof =
+        square.signLookup({
+          receiptDate: date,
+          receiptNumber: "AB12",
+          receiptTotal: 1060,
+          match: {
+            paymentId: "test-payment",
+            orderId: "test-order",
+            paymentDate: date,
+            product: "RETAIL",
+            items: [],
+          },
+        }) + (matched === "tampered" ? "0" : "");
+    const form = new FormData();
+    form.set("payload", JSON.stringify(input));
+    form.append(
+      "photos",
+      new File(
+        [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0])],
+        "item.png",
+        { type: "image/png" },
+      ),
+    );
+    const req = new NextRequest(
+      "https://www.dealsandstealsmd.com/api/returns/claims",
+      {
+        method: "POST",
+        headers: { origin: "https://www.dealsandstealsmd.com" },
+        body: form,
+      },
+    );
+    const r = await app.route.POST(req, context(["claims"]));
+    if (matched === true) {
+      assert.equal(r.status, 201, await r.text());
+      assert.equal(saved.p_data.square.paymentId, "test-payment");
+      assert.deepEqual(
+        saved.p_data.attachments.map((a) => a.purpose),
+        ["item"],
+      );
+    } else {
+      assert.equal(r.status, 400);
+      assert.match((await r.json()).error, /receipt photo or PDF/);
+      assert.equal(saved, undefined);
+    }
+  }
 });
