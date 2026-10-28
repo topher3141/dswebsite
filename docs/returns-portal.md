@@ -20,7 +20,7 @@ The website already uses Vercel, Square, Resend, and Turnstile. This change adds
    - `RETURNS_SITE_URL`: canonical URL for this environment, with no path. Production: `https://www.dealsandstealsmd.com`. For a staging deployment, use its own origin. Requests from other origins are rejected and email links use this value.
    - `RETURNS_LINK_SECRET`: a new random 32-byte secret, generated with `openssl rand -hex 32`. Keep it stable and backed up; changing it requires a customer-link reissue/migration.
    - `RETURNS_CRON_SECRET`: a different random 32-byte secret for the email retry endpoint.
-   - Optional `RETURNS_FROM_EMAIL`: verified Resend sender for returns. Otherwise the existing `JOBS_FROM_EMAIL` is reused.
+   - Returns emails use `Deals & Steals Returns <returns@dealsandstealsmd.com>`. Verify `dealsandstealsmd.com` in Resend and allow the API key to send from it. The jobs sender is independent; `RETURNS_FROM_EMAIL` and `JOBS_FROM_EMAIL` do not override the returns sender.
 3. Reuse existing `RESEND_API_KEY`, `SQUARE_ACCESS_TOKEN`, `SQUARE_LOCATION_ID`, optional `SQUARE_API_VERSION`, `TURNSTILE_SECRET_KEY`, and `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Allow the production and staging hostnames in Turnstile. Square requires `PAYMENTS_READ` and `ORDERS_READ`; a catalog-only OAuth token is insufficient. Keep staging connected to test accounts rather than real customer data.
 4. Configure an external scheduler to GET `/api/returns/mail-retry` every five minutes with `Authorization: Bearer <RETURNS_CRON_SECRET>`. Notifications are stored atomically with claim changes, delivery is attempted immediately, and admins can retry from the dashboard. Each invocation processes at most ten emails; run more frequently if volume requires it. Resend's idempotency header reduces duplicate deliveries during concurrent retries. Monitor pending/failed counts. No claims are discarded because email fails.
 5. Deploy this branch to a Vercel preview with the above variables, then perform the acceptance walkthrough below before merging to production.
@@ -76,3 +76,16 @@ Live acceptance walkthrough (after configuration):
 7. Open the same claim in two staff tabs and save competing changes; the stale tab must get a conflict. Disable email delivery temporarily: the claim must stay saved, queue status must appear, and retry must deliver after recovery.
 
 Browser preview in the development environment was unavailable because the managed launcher adds Vite flags (`--host`, `--strictPort`) to `next dev`. No application code was changed to work around that infrastructure mismatch. Use the Vercel preview for visual and live-service checks.
+
+
+## Square connection and receipt lookup
+
+Use the existing Square application's production access token and the Deals & Steals store's location ID in `SQUARE_ACCESS_TOKEN` and `SQUARE_LOCATION_ID`, enabled for each Vercel deployment environment in use. Never expose the token through a `NEXT_PUBLIC_` variable. For OAuth tokens, authorize `PAYMENTS_READ` and `ORDERS_READ` for the correct seller. No loyalty access is needed for receipt lookup. Do not grant write permissions for this portal.
+
+For test accounts, set `RETURNS_SQUARE_ENVIRONMENT=sandbox` and use a matching sandbox token and location ID; otherwise the returns integration uses production. This variable affects only returns, not the existing shop checkout. Redeploy after changing environment variables.
+
+In the staff dashboard, open **Admins & integrations** and choose **Check Square connection**. It checks Payments read access and Orders search read access for the configured location. The search endpoint uses POST but only reads orders; it does not create or change them. The check returns only connection status, environment, location ID and safe troubleshooting messages. It never returns the token or payment/customer data. If a check fails, correct the indicated credentials/permissions, redeploy and check again. A passing connection check still needs a real receipt lookup to verify actual receipt numbering and item data.
+
+Customers enter receipt number, payment date, and full total including tax. Payments are searched by date and location; matched receipt numbers retrieve the associated order and compare the full order total, including split-tender purchases. Generic entries retain their original name, quantity and before-tax line amount alongside the customer's actual item description. Searches have a 40-second overall fetch budget and a 20-page limit; unavailable or unmatched receipts remain eligible for manual review with an uploaded receipt. No store credit, gift card, refund, loyalty points, or payment is created by this integration.
+
+New admin alerts have the subject **New return request**, include the claim form details, and link directly to the selected claim in the dashboard. Later changes use **Return request update**. Customer subjects keep the claim reference. Photos stay private and can be viewed after staff sign-in.
