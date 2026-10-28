@@ -9,6 +9,7 @@ import {
 } from "../../../../lib/returns/policy";
 import {
   admin,
+  adminNotification,
   admins,
   bot,
   customerToken,
@@ -27,7 +28,7 @@ import {
   storage,
   upload,
 } from "../../../../lib/returns/server";
-import { lookup, readLookup } from "../../../../lib/returns/square";
+import { checkSquare, lookup, readLookup } from "../../../../lib/returns/square";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -85,8 +86,7 @@ async function emails(claim: Claim, text: string, includeCustomer = true) {
   const subject = `Deals & Steals ${reference(claim.id)}`;
   const list = (await admins()).map((email) => ({
     recipient: email,
-    subject,
-    body: `${text}\n\n${claim.name}: ${claim.itemName}\n${claim.late ? "Late claim — exception requested.\n" : ""}${siteUrl()}/returns/admin`,
+    ...adminNotification(claim, text),
     key: `${claim.id}:${claim.version}:admin:${email}`,
   }));
   if (includeCustomer)
@@ -202,6 +202,7 @@ export async function GET(req: NextRequest, context: Context) {
     if (path[0] === "admin") {
       const email = await admin(req);
       if (path[1] === "me") return json({ email });
+      if (path[1] === "square") return json(await checkSquare());
       if (path[1] === "admins")
         return json({
           admins: await database(
