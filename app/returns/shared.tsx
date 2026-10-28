@@ -1,12 +1,30 @@
 "use client";
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   Claim,
   money,
   reference,
   STATUS_LABELS,
 } from "../../lib/returns/policy";
+const VerificationContext = createContext({ ready: false, failed: false });
+
+export function VerificationProvider({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return (
+    <VerificationContext.Provider value={{ ready, failed }}>
+      <Script
+        id="returns-turnstile"
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        onReady={() => { setReady(true); setFailed(false); }}
+        onError={() => setFailed(true)}
+      />
+      {children}
+    </VerificationContext.Provider>
+  );
+}
+
 export function Turnstile({
   onToken,
   reset,
@@ -17,46 +35,63 @@ export function Turnstile({
   const container = useRef<HTMLDivElement>(null),
     widget = useRef<string | null>(null),
     callback = useRef(onToken);
-  const [ready, setReady] = useState(false);
+  const { ready, failed } = useContext(VerificationContext);
+  const [status, setStatus] = useState("Loading verification…");
+  const [retry, setRetry] = useState(0);
+  const [canRetry, setCanRetry] = useState(false);
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   callback.current = onToken;
   useEffect(() => {
     const api = (window as any).turnstile;
-    if (
-      !ready ||
-      !api ||
-      !container.current ||
-      !process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
-    )
-      return;
-    widget.current = api.render(container.current, {
-      sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-      callback: (t: string) => callback.current(t),
-      "expired-callback": () => callback.current(""),
-      "error-callback": () => callback.current(""),
-    });
+    if (!ready || !api || !container.current || !siteKey) return;
+    callback.current("");
+    setStatus("Complete the verification below to continue.");
+    setCanRetry(false);
+    const interrupted = (message: string) => {
+      callback.current("");
+      setStatus(message);
+      setCanRetry(true);
+    };
+    try {
+      widget.current = api.render(container.current, {
+        sitekey: siteKey,
+        callback: (t: string) => {
+          callback.current(t);
+          setStatus("Verification complete.");
+          setCanRetry(false);
+        },
+        "expired-callback": () => interrupted("Verification expired. Please try again."),
+        "error-callback": () => interrupted("Verification could not finish. Please try again."),
+        "timeout-callback": () => interrupted("Verification timed out. Please try again."),
+      });
+    } catch {
+      interrupted("Verification could not load. Please try again.");
+    }
     return () => {
       if (widget.current !== null) api.remove(widget.current);
       widget.current = null;
     };
-  }, [ready]);
-  useEffect(() => {
-    if (widget.current !== null) {
-      (window as any).turnstile?.reset(widget.current);
-      callback.current("");
-    }
-  }, [reset]);
+  }, [ready, siteKey, reset, retry]);
   return (
     <>
-      <Script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-        onReady={() => setReady(true)}
-      />
       <div className="rp-token" ref={container} />
-      {!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+      {!siteKey ? (
         <p className="rp-notice warning">
-          This portal is being configured. Bot verification is not available
-          yet.
+          This portal is being configured. Bot verification is not available yet.
         </p>
+      ) : failed ? (
+        <p className="rp-notice warning" role="alert">
+          Verification could not load. Refresh the page to try again.
+        </p>
+      ) : (
+        <>
+          <p className="rp-help" role="status">{status}</p>
+          {canRetry && (
+            <button type="button" className="rp-button secondary" onClick={() => setRetry((v) => v + 1)}>
+              Retry verification
+            </button>
+          )}
+        </>
       )}
     </>
   );
