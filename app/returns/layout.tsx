@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./returns.css";
+import { VerificationProvider } from "./shared";
 import { SiteHeader, SiteFooter } from "../SiteChrome";
 export const metadata: Metadata = {
   title: "Returns & Store Credit | Deals & Steals",
@@ -14,7 +15,7 @@ export default function ReturnsLayout({
   return (
     <div className="returns-portal">
       <SiteHeader />
-      {children}
+      <VerificationProvider>{children}</VerificationProvider>
       <SiteFooter />
     </div>
   );
