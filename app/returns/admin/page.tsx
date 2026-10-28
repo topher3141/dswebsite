@@ -59,8 +59,13 @@ export default function AdminPage() {
     setAdminList(team.admins);
     setMail(outbox);
   }
+  const [squareConnection, setSquareConnection] = useState<any>(null);
   useEffect(() => {
-    if (email) refresh().catch((e) => setError(e.message));
+    if (!email) return;
+    refresh().catch((e) => setError(e.message));
+    const id = new URLSearchParams(location.search).get("claim");
+    if (id && /^[a-f0-9-]{36}$/.test(id))
+      api("admin/claims/" + id).then((r) => setClaim(r.claim)).catch((e) => setError(e.message));
   }, [email]);
   async function run(fn: () => Promise<void>) {
     setError("");
@@ -233,7 +238,7 @@ export default function AdminPage() {
           className={tab === "team" ? "active" : ""}
           onClick={() => setTab("team")}
         >
-          Admins & email
+          Admins & integrations
         </button>
       </div>
       {error && (
@@ -314,6 +319,23 @@ export default function AdminPage() {
               Add admin
             </button>
           </form>
+          <div className="rp-divider" />
+          <h2>Square receipt lookup</h2>
+          <p>Check that the connected Square account can read payments and orders for this store.</p>
+          <button className="rp-button secondary" disabled={busy} onClick={() => run(async () => {
+            setSquareConnection(await api("admin/square"));
+          })}>
+            Check Square connection
+          </button>
+          {squareConnection && (
+            <div className="rp-notice" role="status">
+              <strong>{squareConnection.connected ? "Square is connected" : "Square needs attention"}</strong>
+              <p>{squareConnection.environment} · Location: {squareConnection.locationId || "Not configured"}</p>
+              <ul>{squareConnection.checks.map((check: any) => (
+                <li key={check.name}>{check.ok ? "✓" : "⚠"} {check.name}: {check.message}</li>
+              ))}</ul>
+            </div>
+          )}
           <div className="rp-divider" />
           <h2>Email delivery</h2>
           <p>
