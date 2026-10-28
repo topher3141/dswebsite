@@ -241,6 +241,7 @@ export default function DealsAndStealsHomepage() {
             <a href="#difference" className="hover:text-pink-600">Why Us</a>
             <a href="#hours" className="hover:text-pink-600">Hours</a>
             <a href="#visit" className="hover:text-pink-600">Visit Us</a>
+            <a href="/returns" className="hover:text-pink-600">Returns & Credit</a>
             <a href="https://www.retailogic.dev/" target="_blank" rel="noreferrer" title="Click here to view and pay your weekly invoice." className="rounded-full bg-pink-600 px-4 py-2 text-white shadow-sm transition hover:bg-pink-700">
               Pay Invoice
             </a>
