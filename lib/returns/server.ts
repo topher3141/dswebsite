@@ -12,11 +12,13 @@ export class HttpError extends Error {
 }
 export function env(key: string) {
   const v = process.env[key];
-  if (!v)
+  if (!v) {
+    console.error(`[returns] Missing required environment variable: ${key}`);
     throw new HttpError(
       503,
       "The returns portal is being configured. Please try again later.",
     );
+  }
   return v;
 }
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
