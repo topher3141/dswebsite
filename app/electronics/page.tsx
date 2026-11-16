@@ -667,7 +667,7 @@ export default function ElectronicsPage() {
             <a href="/#hours" className="hover:text-pink-600">Hours</a>
             <a href="/#visit" className="hover:text-pink-600">Visit Us</a>
             <a href="/shop" className="hover:text-pink-600">Shop</a>
-            <a href="/electronics" className="font-black text-pink-600">Electronics</a>
+            <a href="/electronics" className="font-black text-pink-600">TVs & More</a>
 
             <button
               onClick={() => setIsCartOpen(true)}
@@ -718,15 +718,15 @@ export default function ElectronicsPage() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-500 opacity-60"></span>
                     <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-teal-600"></span>
                   </span>
-                  <span>Online Exclusives · TVs & Electronics</span>
+                  <span>Online Exclusives · TVs & More</span>
                 </div>
 
                 <h1 className="max-w-4xl text-4xl font-black leading-none tracking-tight text-slate-950 md:text-6xl">
-                  Big-screen deals. Small-price thrills.
+                  TVs & More. Big deals, online only.
                 </h1>
 
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-700 md:text-lg">
-                  Shop TVs and high-value electronics you won’t find on our sales floor. These special finds are available to order online, with convenient local pickup.
+                  Discover standout deals on televisions and electronics. These special finds are only available to order online—not on our sales floor. Secure your favorites here, then pick them up locally.
                 </p>
 
                 <div className="mt-5 flex flex-wrap gap-3 text-sm font-black text-slate-700">
@@ -755,7 +755,7 @@ export default function ElectronicsPage() {
           <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">Browse</p>
-              <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">TVs & Electronics</h2>
+              <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">TVs & More</h2>
             </div>
 
             <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-[520px] lg:flex-row lg:items-center lg:justify-end">
@@ -764,7 +764,7 @@ export default function ElectronicsPage() {
                 <input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Search TVs & electronics..."
+                  placeholder="Search TVs & more..."
                   className="w-full rounded-2xl border-2 border-slate-200 bg-white py-4 pl-12 pr-4 text-base font-bold text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
                 />
               </div>
@@ -796,7 +796,7 @@ export default function ElectronicsPage() {
 
           {isLoading && (
             <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center">
-              <h3 className="text-2xl font-black">Loading TVs & electronics...</h3>
+              <h3 className="text-2xl font-black">Loading TVs & more...</h3>
               <p className="mt-2 text-slate-600">Pulling the latest items and inventory counts from Square.</p>
             </div>
           )}
@@ -926,7 +926,7 @@ export default function ElectronicsPage() {
                 Want first access to more deals?
               </h2>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-pink-50">
-                These online-only electronics are just part of what we do. Join our Facebook group for weekly sales, live events, and fresh finds.
+                These online-only finds are just part of what we do. Join our Facebook group for weekly sales, live events, and fresh finds.
               </p>
             </div>
 
