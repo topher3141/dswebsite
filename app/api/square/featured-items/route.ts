@@ -166,7 +166,7 @@ async function resolveElectronicsCategoryId() {
     const response = await squareGet(`/v2/catalog/list?${query.toString()}`);
     const category = (response.objects || []).find((object: any) => {
       const name = normalizeLabel(object.category_data?.name);
-      return name === "tvandelectronics" || name === "tvselectronics";
+      return name === "tvandelectronics" || name === "tvselectronics" || name === "tvelectronics";
     });
     if (category) return category.id as string;
     cursor = response.cursor;
