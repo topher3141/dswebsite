@@ -439,6 +439,7 @@ export async function GET(request: Request) {
 
       return [{
         id: item.id,
+        categories: [...(itemCategoryNames.get(item.id) || [])].filter(name => name === "Televisions" || name === "Electronics"),
         variationId: availableVariation.id,
         name: itemData.name || "Untitled Item",
         description: itemData.description_plaintext || itemData.description || "",
