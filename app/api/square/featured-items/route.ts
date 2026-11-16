@@ -111,7 +111,7 @@ function findRetailPriceInDescription(description: unknown): number | null {
     .replace(/&#36;/g, "$")
     .replace(/\s+/g, " ");
 
-  const label = String.raw`(?:MSRP|original\s+(?:retail\s+)?price|retail\s+(?:price|value)|original\s+retail(?:\s+value)?|compare[-\s]?at\s+price)`;
+  const label = String.raw`(?:MSRP|original\s+(?:retail\s+)?price|retails?|retail\s+(?:price|value)|original\s+retail(?:\s+value)?|compare[-\s]?at\s+price)`;
   const amount = String.raw`\$\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{2})?)`;
   // Limit the distance between the label and amount to avoid unrelated prices.
   const labeledPrice = new RegExp(String.raw`\b` + label + String.raw`\b\s*(?::|=|-|–|—)?\s*(?:USD\s*)?` + amount, "i");
