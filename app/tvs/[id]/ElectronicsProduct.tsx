@@ -17,6 +17,7 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
   const { cartItems, addToCart, decreaseCartQuantity, removeFromCart, checkoutCart, checkoutError, isCheckingOutCart } = useElectronicsCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   useEffect(() => {
     let active = true;
     async function load() {
@@ -38,6 +39,34 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
     if (!product) return;
     addToCart(product);
     setIsCartOpen(true);
+  }
+
+  async function buyNow() {
+    if (!product?.variationId || !product.stockCount || isBuyingNow) return;
+    // Open a tab on the user click so browser popup blockers do not interfere.
+    const checkoutWindow = window.open("", "_blank");
+    setError("");
+    setIsBuyingNow(true);
+    try {
+      const response = await fetch("/api/square/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [{ variationId: product.variationId, quantity: 1, itemName: product.name }],
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.checkoutUrl) {
+        throw new Error(data.error || "Unable to create checkout.");
+      }
+      if (checkoutWindow) checkoutWindow.location.href = data.checkoutUrl;
+      else window.location.href = data.checkoutUrl;
+    } catch (error: any) {
+      checkoutWindow?.close();
+      setError(error?.message || "Unable to start checkout.");
+    } finally {
+      setIsBuyingNow(false);
+    }
   }
 
   async function copyLink() {
@@ -148,14 +177,22 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
               </div>
               <p className="mt-5 font-bold text-teal-700">{product.stockCount === 1 ? "Only 1 left in stock" : `${product.stockCount} available`}</p>
               <p className="mt-4 leading-7 text-slate-600">These special finds are only available to order online, and will be ready to pickup the next day we are open!</p>
-              <button onClick={addProductToCart}
-                disabled={!product.variationId || !product.stockCount ||
-                  cartItems.some(item => item.product.id === product.id && item.quantity >= product.stockCount!)}
-                className="mt-6 rounded-xl bg-teal-700 px-6 py-4 text-lg font-black text-white hover:bg-teal-800 disabled:opacity-50">
-                Add to Cart
-              </button>
-              <button onClick={copyLink} className="mt-3 rounded-xl border-2 border-pink-200 px-6 py-3 font-black text-pink-700 hover:bg-pink-50">
-                {copyDone ? "✓ Link Copied" : "Copy Link to Share"}
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button onClick={buyNow}
+                  disabled={isBuyingNow || !product.variationId || !product.stockCount}
+                  className="rounded-xl bg-pink-600 px-3 py-4 text-base font-black text-white transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50">
+                  {isBuyingNow ? "Opening Checkout..." : "Buy Now"}
+                </button>
+                <button onClick={addProductToCart}
+                  disabled={!product.variationId || !product.stockCount ||
+                    cartItems.some(item => item.product.id === product.id && item.quantity >= product.stockCount!)}
+                  className="rounded-xl bg-teal-700 px-3 py-4 text-base font-black text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">
+                  Add to Cart
+                </button>
+              </div>
+              <button onClick={copyLink}
+                className="mt-3 self-start rounded-md px-2 py-1.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-pink-700">
+                {copyDone ? "✓ Link copied" : "🔗 Copy item link"}
               </button>
               {error && <p role="alert" className="mt-4 text-sm font-bold text-red-600">{error}</p>}
               <div className="mt-8 border-t border-slate-200 pt-5">
