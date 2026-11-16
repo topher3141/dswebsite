@@ -749,6 +749,17 @@ export default function ShopPage() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-7xl px-5 pt-8">
+          <a href="/electronics" className="group flex flex-col justify-between gap-5 overflow-hidden rounded-[1.75rem] bg-slate-950 px-7 py-7 text-white shadow-lg transition hover:shadow-xl md:flex-row md:items-center md:px-10">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-teal-300">📺 Online-only electronics</p>
+              <h2 className="mt-2 text-3xl font-black leading-tight md:text-4xl">Big screens. Bigger savings.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">Shop TVs and high-value electronics exclusively online. Order before they disappear, then pick up locally.</p>
+            </div>
+            <span className="inline-flex shrink-0 items-center justify-center rounded-xl bg-teal-400 px-6 py-3 font-black text-slate-950 transition group-hover:bg-teal-300">Shop Electronics →</span>
+          </a>
+        </section>
+
         <section className="mx-auto max-w-7xl px-5 py-8">
           <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
