@@ -158,9 +158,10 @@ async function squareGet(path: string) {
 }
 
 async function resolveTvAndElectronicsCategoryIds() {
-  // Resolve the two exact Square category names every time, rather than
-  // accidentally using an older combined-category ID from an environment variable.
-  const ids = new Map<string, string>();
+  // Preserve every exact-name match. Square can contain more than one category
+  // called "Electronics"; picking the first ID can silently omit products.
+  const names = ["televisions", "electronics"];
+  const idsByName = new Map<string, string[]>(names.map(name => [name, []]));
   let cursor: string | undefined;
   do {
     const query = new URLSearchParams({ types: "CATEGORY" });
@@ -168,18 +169,16 @@ async function resolveTvAndElectronicsCategoryIds() {
     const response = await squareGet(`/v2/catalog/list?${query.toString()}`);
     for (const object of response.objects || []) {
       const name = normalizeLabel(object.category_data?.name);
-      if ((name === "televisions" || name === "electronics") &&
-          object.category_data?.category_type !== "MENU_CATEGORY") {
-        ids.set(name, object.id);
+      if (idsByName.has(name) && !idsByName.get(name)!.includes(object.id)) {
+        idsByName.get(name)!.push(object.id);
       }
     }
-    if (ids.size === 2) break;
     cursor = response.cursor;
   } while (cursor);
   return {
-    ids: [...new Set(ids.values())],
-    namedIds: Object.fromEntries(ids),
-    missing: ["televisions", "electronics"].filter((name) => !ids.has(name)),
+    ids: [...new Set([...idsByName.values()].flat())],
+    namedIds: Object.fromEntries(idsByName),
+    missing: names.filter(name => !idsByName.get(name)!.length),
   };
 }
 
@@ -270,37 +269,74 @@ export async function GET(request: Request) {
     // This avoids category-filter interaction and makes missing stock diagnosable.
     const itemsById = new Map<string, any>();
     const itemCategoryNames = new Map<string, Set<string>>();
-    const categoryDiagnostics: Record<string, { catalogItems: number; pricedItems: number; inStockItems: number }> = {};
+    const categoryDiagnostics: Record<string, { catalogItems: number; pricedItems: number; inStockItems: number; categoryIds: string[] }> = {};
     const categorySearches = isElectronics
       ? [
-          { name: "Televisions", id: collection!.namedIds.televisions },
-          { name: "Electronics", id: collection!.namedIds.electronics },
+          { name: "Televisions", ids: collection!.namedIds.televisions },
+          { name: "Electronics", ids: collection!.namedIds.electronics },
         ]
-      : [{ name: "Featured Finds", id: categoryIds[0] }];
+      : [{ name: "Featured Finds", ids: categoryIds }];
 
-    for (const { name, id } of categorySearches) {
-      if (!id) continue;
-      let catalogCursor: string | undefined;
-      const seenCategoryIds = new Set<string>();
-      do {
-        const catalogResponse = await squarePost("/v2/catalog/search-catalog-items", {
-          category_ids: [id],
-          enabled_location_ids: [locationId],
-          product_types: ["REGULAR"],
-          limit: 100,
-          ...(catalogCursor ? { cursor: catalogCursor } : {}),
-        });
-        for (const item of catalogResponse.items || []) {
-          if (!item.id) continue;
-          itemsById.set(item.id, item);
-          seenCategoryIds.add(item.id);
-          if (!itemCategoryNames.has(item.id)) itemCategoryNames.set(item.id, new Set());
-          itemCategoryNames.get(item.id)!.add(name);
-        }
-        catalogCursor = catalogResponse.cursor;
-      } while (catalogCursor);
-      categoryDiagnostics[name] = { catalogItems: seenCategoryIds.size, pricedItems: 0, inStockItems: 0 };
+    function addCategoryItem(item: any, categoryName: string) {
+      if (!item?.id) return;
+      itemsById.set(item.id, item);
+      if (!itemCategoryNames.has(item.id)) itemCategoryNames.set(item.id, new Set());
+      itemCategoryNames.get(item.id)!.add(categoryName);
     }
+
+    // Query the two Square categories separately; items need only belong to ONE.
+    for (const { name, ids } of categorySearches) {
+      const seenCategoryIds = new Set<string>();
+      for (const id of ids) {
+        let catalogCursor: string | undefined;
+        do {
+          const catalogResponse = await squarePost("/v2/catalog/search-catalog-items", {
+            category_ids: [id],
+            enabled_location_ids: [locationId],
+            product_types: ["REGULAR"],
+            limit: 100,
+            ...(catalogCursor ? { cursor: catalogCursor } : {}),
+          });
+          for (const item of catalogResponse.items || []) {
+            if (!item?.id) continue;
+            addCategoryItem(item, name);
+            seenCategoryIds.add(item.id);
+          }
+          catalogCursor = catalogResponse.cursor;
+        } while (catalogCursor);
+      }
+      categoryDiagnostics[name] = {
+        catalogItems: seenCategoryIds.size, pricedItems: 0, inStockItems: 0, categoryIds: ids,
+      };
+    }
+
+    // Some Square catalog configurations do not return secondary-category
+    // assignments through search-catalog-items. Fall back to reading item
+    // category assignments directly when the Electronics category is empty.
+    if (isElectronics && categoryDiagnostics.Electronics.catalogItems === 0) {
+      const electronicsIds = new Set(collection!.namedIds.electronics);
+      let cursor: string | undefined;
+      do {
+        const query = new URLSearchParams({ types: "ITEM" });
+        if (cursor) query.set("cursor", cursor);
+        const page = await squareGet(`/v2/catalog/list?${query.toString()}`);
+        for (const item of page.objects || []) {
+          const data = item.item_data || {};
+          const itemCategories = [
+            data.category_id,
+            ...(data.categories || []).map((category: any) => category.id),
+          ].filter(Boolean);
+          if (!itemCategories.some((id: string) => electronicsIds.has(id))) continue;
+          if (item.is_deleted || item.present_at_all_locations === false &&
+            !(item.present_at_location_ids || []).includes(locationId)) continue;
+          addCategoryItem(item, "Electronics");
+        }
+        cursor = page.cursor;
+      } while (cursor);
+      categoryDiagnostics.Electronics.catalogItems =
+        [...itemCategoryNames.values()].filter(names => names.has("Electronics")).length;
+    }
+
     const items = [...itemsById.values()];
 
     const imageIds = Array.from(
