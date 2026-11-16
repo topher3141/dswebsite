@@ -736,13 +736,13 @@ export default function ElectronicsPage() {
 
               <div className="rounded-[1.5rem] border-2 border-pink-100 bg-[#fff8ef] p-5 shadow-sm">
                 <p className="text-xs font-black uppercase tracking-[0.25em] text-pink-600">
-                  Online-only finds
+                  How it works
                 </p>
                 <p className="mt-2 text-3xl font-black leading-none text-slate-950">
-                  Big tech.
+                  See it. Love it.
                 </p>
                 <p className="text-3xl font-black leading-none text-pink-600">
-                  Better deals.
+                  Order it. Pick it up.
                 </p>
               </div>
             </div>
