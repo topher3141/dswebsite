@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useElectronicsCart } from "./useElectronicsCart";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
 const LOYALTY_URL = "https://app.squareup.com/loyalty/ML6ZZS746Y0MJ";
@@ -470,12 +471,10 @@ export default function ElectronicsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { cartItems, addToCart: addCartItem, decreaseCartQuantity, removeFromCart, checkoutCart, checkoutError, isCheckingOutCart } = useElectronicsCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [checkoutError, setCheckoutError] = useState("");
-  const [isCheckingOutCart, setIsCheckingOutCart] = useState(false);
 
   useEffect(() => {
     async function loadProducts() {
@@ -530,110 +529,8 @@ export default function ElectronicsPage() {
   }, [selectedCategory, products, searchTerm]);
 
   function addToCart(product: Product) {
-    if (!product.variationId) return;
-
-    setCartItems((currentItems) => {
-      const existingItem = currentItems.find((item) => item.product.id === product.id);
-      const stockCount = product.stockCount || 0;
-
-      if (existingItem) {
-        if (stockCount > 0 && existingItem.quantity >= stockCount) {
-          return currentItems;
-        }
-
-        return currentItems.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-
-      return [...currentItems, { product, quantity: 1 }];
-    });
-
+    addCartItem(product);
     setIsCartOpen(true);
-  }
-
-  function decreaseCartQuantity(product: Product) {
-    setCartItems((currentItems) => {
-      const existingItem = currentItems.find((item) => item.product.id === product.id);
-
-      if (!existingItem) return currentItems;
-
-      if (existingItem.quantity <= 1) {
-        return currentItems.filter((item) => item.product.id !== product.id);
-      }
-
-      return currentItems.map((item) =>
-        item.product.id === product.id
-          ? { ...item, quantity: item.quantity - 1 }
-          : item
-      );
-    });
-  }
-
-  function removeFromCart(product: Product) {
-    setCartItems((currentItems) =>
-      currentItems.filter((item) => item.product.id !== product.id)
-    );
-  }
-
-  async function checkoutCart() {
-    const checkoutWindow = window.open("", "_blank", "noopener,noreferrer");
-
-    try {
-      setCheckoutError("");
-      setIsCheckingOutCart(true);
-
-      const response = await fetch("/api/square/create-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: cartItems.map((item) => ({
-            variationId: item.product.variationId,
-            quantity: item.quantity,
-            itemName: item.product.name,
-          })),
-        }),
-      });
-
-      const contentType = response.headers.get("content-type") || "";
-
-      if (!contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Non-JSON checkout response:", text);
-        checkoutWindow?.close();
-
-        throw new Error(
-          `Checkout route returned ${response.status}. This means /api/square/create-checkout is not being found or is returning an HTML error page.`
-        );
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        checkoutWindow?.close();
-        throw new Error(data?.error || "Unable to create checkout");
-      }
-
-      if (!data.checkoutUrl) {
-        checkoutWindow?.close();
-        throw new Error("Square did not return a checkout link.");
-      }
-
-      if (checkoutWindow) {
-        checkoutWindow.location.href = data.checkoutUrl;
-        checkoutWindow.focus();
-      } else {
-        window.location.href = data.checkoutUrl;
-      }
-    } catch (err: any) {
-      setCheckoutError(err.message || "Unable to start checkout");
-    } finally {
-      setIsCheckingOutCart(false);
-    }
   }
 
   return (
@@ -863,12 +760,7 @@ export default function ElectronicsPage() {
                                   {item.description}
                                 </p>
 
-                                <a
-                                  href={itemUrl}
-                                  className="mt-2 inline-block text-sm font-black text-pink-600 transition hover:text-pink-700"
-                                >
-                                  View item &amp; buy
-                                </a>
+
                               </>
                             ) : (
                               <p className="text-sm leading-6 text-slate-400">
@@ -882,46 +774,25 @@ export default function ElectronicsPage() {
 
                             <StockLine item={item} />
 
-                            <div className="mt-4 flex gap-2">
-                              <a
-                                href={itemUrl}
-                                className="flex-1 rounded-xl border-2 border-teal-700 px-3 py-2.5 text-center text-sm font-black text-teal-800 hover:bg-teal-50"
-                              >
-                                View Item
-                              </a>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  const url = new URL(itemUrl, window.location.origin).href;
-                                  try {
-                                    await navigator.clipboard.writeText(url);
-                                    window.alert("Item link copied! Paste it into your Facebook group post.");
-                                  } catch {
-                                    window.prompt("Copy this item link:", url);
-                                  }
-                                }}
-                                className="flex-1 rounded-xl border-2 border-pink-200 px-3 py-2.5 text-sm font-black text-pink-700 hover:bg-pink-50"
-                              >
-                                Copy Link
-                              </button>
-                            </div>
-
                             <p className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-600">
                               <span className="text-teal-700">✅</span>
                               <span>Local pickup only</span>
                             </p>
 
-                            <button
-                              onClick={() => addToCart(item)}
-                              disabled={!canAddMore}
-                              className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-5 py-3 font-black transition ${
-                                canAddMore
+                            <div className="mt-5 flex gap-2">
+                              <a href={itemUrl}
+                                className="inline-flex flex-1 items-center justify-center rounded-xl border-2 border-teal-700 px-4 py-3 text-sm font-black text-teal-800 transition hover:bg-teal-50">
+                                View
+                              </a>
+                              <button
+                                onClick={() => addToCart(item)}
+                                disabled={!canAddMore}
+                                className={`inline-flex flex-[1.4] items-center justify-center rounded-xl px-3 py-3 text-sm font-black transition ${canAddMore
                                   ? "bg-teal-700 text-white hover:bg-teal-800"
-                                  : "cursor-not-allowed bg-slate-300 text-slate-600"
-                              }`}
-                            >
-                              {cartQuantity > 0 ? "Add Another" : "Add to Cart"}
-                            </button>
+                                  : "cursor-not-allowed bg-slate-300 text-slate-600"}`}>
+                                Add to Cart
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
