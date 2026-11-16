@@ -666,7 +666,6 @@ export default function ElectronicsPage() {
             <a href="/#difference" className="hover:text-pink-600">Why Us</a>
             <a href="/#hours" className="hover:text-pink-600">Hours</a>
             <a href="/#visit" className="hover:text-pink-600">Visit Us</a>
-            <a href="/shop" className="hover:text-pink-600">Shop</a>
             <a href="/electronics" className="font-black text-pink-600">TVs & More</a>
 
             <button
@@ -726,7 +725,7 @@ export default function ElectronicsPage() {
                 </h1>
 
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-700 md:text-lg">
-                  Discover standout deals on televisions and electronics. These special finds are only available to order online—not on our sales floor. Secure your favorites here, then pick them up locally.
+                  Shop TVs and other electronics you won’t find on our sales floor. These special finds are only available to order online, and will be ready to pickup the next day we are open!
                 </p>
 
                 <div className="mt-5 flex flex-wrap gap-3 text-sm font-black text-slate-700">
@@ -751,7 +750,6 @@ export default function ElectronicsPage() {
         </section>
 
         <section className="mx-auto max-w-7xl px-5 py-8">
-          <a href="/shop" className="mb-5 inline-flex text-sm font-black text-teal-700 hover:text-teal-900">← Browse all Featured Finds</a>
           <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.25em] text-pink-600">Browse</p>
