@@ -145,6 +145,35 @@ function findMsrpCents(item: any, variation: any) {
   );
 }
 
+async function squareGet(path: string) {
+  const accessToken = process.env.SQUARE_ACCESS_TOKEN;
+  if (!accessToken) throw new Error("Missing SQUARE_ACCESS_TOKEN");
+  const response = await fetch(`${SQUARE_BASE_URL}${path}`, {
+    headers: { "Square-Version": SQUARE_API_VERSION, Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.errors?.[0]?.detail || "Square API request failed");
+  return data;
+}
+
+async function resolveElectronicsCategoryId() {
+  if (process.env.SQUARE_ELECTRONICS_CATEGORY_ID) return process.env.SQUARE_ELECTRONICS_CATEGORY_ID;
+  let cursor: string | undefined;
+  do {
+    const query = new URLSearchParams({ types: "CATEGORY" });
+    if (cursor) query.set("cursor", cursor);
+    const response = await squareGet(`/v2/catalog/list?${query.toString()}`);
+    const category = (response.objects || []).find((object: any) => {
+      const name = normalizeLabel(object.category_data?.name);
+      return name === "tvandelectronics" || name === "tvselectronics";
+    });
+    if (category) return category.id as string;
+    cursor = response.cursor;
+  } while (cursor);
+  return null;
+}
+
 async function squarePost(path: string, body: unknown) {
   const accessToken = process.env.SQUARE_ACCESS_TOKEN;
 
@@ -205,10 +234,13 @@ async function getInventoryCounts(variationIds: string[], locationId: string) {
   return inventoryByVariationId;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const locationId = process.env.SQUARE_LOCATION_ID;
-    const categoryId = process.env.SQUARE_FEATURED_CATEGORY_ID;
+    const isElectronics = new URL(request.url).searchParams.get("collection") === "electronics";
+    const categoryId = isElectronics
+      ? await resolveElectronicsCategoryId()
+      : process.env.SQUARE_FEATURED_CATEGORY_ID;
 
     if (!locationId) {
       return NextResponse.json(
@@ -219,19 +251,24 @@ export async function GET() {
 
     if (!categoryId) {
       return NextResponse.json(
-        { error: "Missing SQUARE_FEATURED_CATEGORY_ID" },
+        { error: isElectronics ? "Square category TV and Electronics was not found. Create that category or configure SQUARE_ELECTRONICS_CATEGORY_ID." : "Missing SQUARE_FEATURED_CATEGORY_ID" },
         { status: 500 }
       );
     }
 
-    const catalogResponse = await squarePost("/v2/catalog/search-catalog-items", {
-      category_ids: [categoryId],
-      enabled_location_ids: [locationId],
-      product_types: ["REGULAR"],
-      limit: 100,
-    });
-
-    const items = catalogResponse.items || [];
+    const items: any[] = [];
+    let catalogCursor: string | undefined;
+    do {
+      const catalogResponse = await squarePost("/v2/catalog/search-catalog-items", {
+        category_ids: [categoryId],
+        enabled_location_ids: [locationId],
+        product_types: ["REGULAR"],
+        limit: 100,
+        ...(catalogCursor ? { cursor: catalogCursor } : {}),
+      });
+      items.push(...(catalogResponse.items || []));
+      catalogCursor = catalogResponse.cursor;
+    } while (catalogCursor);
 
     const imageIds = Array.from(
       new Set(items.flatMap((item: any) => item.item_data?.image_ids || []))
