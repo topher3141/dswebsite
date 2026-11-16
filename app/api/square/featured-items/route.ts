@@ -157,21 +157,33 @@ async function squareGet(path: string) {
   return data;
 }
 
-async function resolveElectronicsCategoryId() {
-  if (process.env.SQUARE_ELECTRONICS_CATEGORY_ID) return process.env.SQUARE_ELECTRONICS_CATEGORY_ID;
-  let cursor: string | undefined;
-  do {
-    const query = new URLSearchParams({ types: "CATEGORY" });
-    if (cursor) query.set("cursor", cursor);
-    const response = await squareGet(`/v2/catalog/list?${query.toString()}`);
-    const category = (response.objects || []).find((object: any) => {
-      const name = normalizeLabel(object.category_data?.name);
-      return name === "tvandelectronics" || name === "tvselectronics" || name === "tvelectronics";
-    });
-    if (category) return category.id as string;
-    cursor = response.cursor;
-  } while (cursor);
-  return null;
+async function resolveTvAndElectronicsCategoryIds() {
+  const ids = new Map<string, string>();
+  if (process.env.SQUARE_TELEVISIONS_CATEGORY_ID) {
+    ids.set("televisions", process.env.SQUARE_TELEVISIONS_CATEGORY_ID);
+  }
+  if (process.env.SQUARE_ELECTRONICS_CATEGORY_ID) {
+    ids.set("electronics", process.env.SQUARE_ELECTRONICS_CATEGORY_ID);
+  }
+
+  // Resolve each category independently using its exact Square catalog name.
+  if (ids.size < 2) {
+    let cursor: string | undefined;
+    do {
+      const query = new URLSearchParams({ types: "CATEGORY" });
+      if (cursor) query.set("cursor", cursor);
+      const response = await squareGet(`/v2/catalog/list?${query.toString()}`);
+      for (const object of response.objects || []) {
+        const name = normalizeLabel(object.category_data?.name);
+        if ((name === "televisions" || name === "electronics") && !ids.has(name)) {
+          ids.set(name, object.id);
+        }
+      }
+      if (ids.size === 2) break;
+      cursor = response.cursor;
+    } while (cursor);
+  }
+  return { ids: [...new Set(ids.values())], missing: ["televisions", "electronics"].filter((name) => !ids.has(name)) };
 }
 
 async function squarePost(path: string, body: unknown) {
@@ -238,9 +250,10 @@ export async function GET(request: Request) {
   try {
     const locationId = process.env.SQUARE_LOCATION_ID;
     const isElectronics = new URL(request.url).searchParams.get("collection") === "electronics";
-    const categoryId = isElectronics
-      ? await resolveElectronicsCategoryId()
-      : process.env.SQUARE_FEATURED_CATEGORY_ID;
+    const collection = isElectronics ? await resolveTvAndElectronicsCategoryIds() : null;
+    const categoryIds = isElectronics
+      ? collection!.ids
+      : (process.env.SQUARE_FEATURED_CATEGORY_ID ? [process.env.SQUARE_FEATURED_CATEGORY_ID] : []);
 
     if (!locationId) {
       return NextResponse.json(
@@ -249,9 +262,9 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!categoryId) {
+    if (!categoryIds.length || (isElectronics && collection!.missing.length > 0)) {
       return NextResponse.json(
-        { error: isElectronics ? "Square category TV and Electronics was not found. Create that category or configure SQUARE_ELECTRONICS_CATEGORY_ID." : "Missing SQUARE_FEATURED_CATEGORY_ID" },
+        { error: isElectronics ? `Square categories not found: ${collection!.missing.join(", ")}. Make sure both Televisions and Electronics exist, or set their individual category IDs.` : "Missing SQUARE_FEATURED_CATEGORY_ID" },
         { status: 500 }
       );
     }
@@ -260,7 +273,7 @@ export async function GET(request: Request) {
     let catalogCursor: string | undefined;
     do {
       const catalogResponse = await squarePost("/v2/catalog/search-catalog-items", {
-        category_ids: [categoryId],
+        category_ids: categoryIds,
         enabled_location_ids: [locationId],
         product_types: ["REGULAR"],
         limit: 100,
