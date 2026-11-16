@@ -95,6 +95,34 @@ function extractCustomAttributePriceCents(object: any, possibleNames: string[]) 
   return null;
 }
 
+/**
+ * Descriptions sometimes contain a stated original retail value even when the
+ * Square MSRP attribute is empty. Only accept amounts explicitly labeled as
+ * MSRP, retail price/value, original price, or compare-at price.
+ */
+function findRetailPriceInDescription(description: unknown): number | null {
+  if (typeof description !== "string" || !description.trim()) return null;
+
+  // Both plain text and simple HTML descriptions can be supplied by Square.
+  const text = description
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&dollar;/gi, "$")
+    .replace(/&#36;/g, "$")
+    .replace(/\s+/g, " ");
+
+  const label = String.raw`(?:MSRP|original\\s+(?:retail\\s+)?price|retail\\s+(?:price|value)|original\\s+retail(?:\\s+value)?|compare[-\\s]?at\\s+price)`;
+  const amount = String.raw`\\$\\s*((?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d{2})?)`;
+  // Limit the distance between the label and amount to avoid unrelated prices.
+  const labeledPrice = new RegExp(String.raw`\\b` + label + String.raw`\\b\\s*(?::|=|-|–|—)?\\s*(?:USD\\s*)?` + amount, "i");
+  const match = text.match(labeledPrice);
+  if (!match) return null;
+
+  const dollars = Number(match[1].replace(/,/g, ""));
+  if (!Number.isFinite(dollars) || dollars <= 0) return null;
+  return Math.round(dollars * 100);
+}
+
 function findMsrpCents(item: any, variation: any) {
   const itemData = item?.item_data || {};
   const variationData = variation?.item_variation_data || {};
@@ -394,7 +422,18 @@ export async function GET(request: Request) {
       const squarePriceMoney = availableVariation.item_variation_data.price_money;
       const currency = squarePriceMoney.currency || "USD";
       const dealsAmount = squarePriceMoney.amount;
-      const msrpAmount = findMsrpCents(item, availableVariation);
+      const statedMsrpAmount = findMsrpCents(item, availableVariation);
+      const descriptionRetailAmount =
+        statedMsrpAmount == null
+          ? findRetailPriceInDescription(itemData.description_plaintext || itemData.description)
+          : null;
+      // Only advertise a description-derived retail price when it exceeds our
+      // actual selling price; never show misleading negative savings.
+      const msrpAmount =
+        statedMsrpAmount ??
+        (descriptionRetailAmount !== null && descriptionRetailAmount > dealsAmount
+          ? descriptionRetailAmount
+          : null);
       const firstImageId = itemData.image_ids?.[0];
       const stockCount = inventoryByVariationId[availableVariation.id] || 0;
 
