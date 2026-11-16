@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Product = {
   id: string;
+  categories?: string[];
   name: string;
   description?: string;
   image?: string | null;
@@ -66,6 +67,7 @@ function facebookPost(product: Product) {
 export default function AdminInventory() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<"All" | "Televisions" | "Electronics">("All");
   const [sortBy, setSortBy] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [onlyRetail, setOnlyRetail] = useState(false);
@@ -107,6 +109,7 @@ export default function AdminInventory() {
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
     const filtered = products.filter((p) =>
+      (categoryFilter === "All" || (p.categories || []).includes(categoryFilter)) &&
       (!term || p.name.toLowerCase().includes(term) || (p.description || "").toLowerCase().includes(term)) &&
       (!onlyRetail || (p.retailAmount != null && p.retailAmount > 0))
     );
@@ -126,7 +129,7 @@ export default function AdminInventory() {
         ? av.localeCompare(bv) : Number(av) - Number(bv);
       return comparison * (sortDirection === "asc" ? 1 : -1);
     });
-  }, [products, search, sortBy, sortDirection, onlyRetail]);
+  }, [products, search, categoryFilter, sortBy, sortDirection, onlyRetail]);
 
   function chooseSort(key: SortKey) {
     if (sortBy === key) setSortDirection((previous) => previous === "asc" ? "desc" : "asc");
@@ -193,6 +196,24 @@ export default function AdminInventory() {
         </section>
 
         <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-5 pt-5">
+            {(["All", "Televisions", "Electronics"] as const).map((category) => {
+              const total = category === "All"
+                ? products.length
+                : products.filter(product => (product.categories || []).includes(category)).length;
+              return (
+                <button key={category} type="button" onClick={() => setCategoryFilter(category)}
+                  aria-pressed={categoryFilter === category}
+                  className={`rounded-full border px-4 py-2 text-sm font-black transition ${
+                    categoryFilter === category
+                      ? "border-teal-700 bg-teal-700 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-teal-400 hover:bg-teal-50"
+                  }`}>
+                  {category === "All" ? "All Items" : category} ({total})
+                </button>
+              );
+            })}
+          </div>
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 p-5">
             <div className="min-w-[220px] flex-1">
               <label htmlFor="inventory-search" className="mb-2 block text-sm font-black">Find an item</label>
