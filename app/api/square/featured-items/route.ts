@@ -269,19 +269,42 @@ export async function GET(request: Request) {
       );
     }
 
-    const items: any[] = [];
-    let catalogCursor: string | undefined;
-    do {
-      const catalogResponse = await squarePost("/v2/catalog/search-catalog-items", {
-        category_ids: categoryIds,
-        enabled_location_ids: [locationId],
-        product_types: ["REGULAR"],
-        limit: 100,
-        ...(catalogCursor ? { cursor: catalogCursor } : {}),
-      });
-      items.push(...(catalogResponse.items || []));
-      catalogCursor = catalogResponse.cursor;
-    } while (catalogCursor);
+    // Search each category independently, then merge by catalog item ID.
+    // This avoids category-filter interaction and makes missing stock diagnosable.
+    const itemsById = new Map<string, any>();
+    const itemCategoryNames = new Map<string, Set<string>>();
+    const categoryDiagnostics: Record<string, { catalogItems: number; pricedItems: number; inStockItems: number }> = {};
+    const categorySearches = isElectronics
+      ? [
+          { name: "Televisions", id: categoryIds[0] },
+          { name: "Electronics", id: categoryIds[1] },
+        ]
+      : [{ name: "Featured Finds", id: categoryIds[0] }];
+
+    for (const { name, id } of categorySearches) {
+      if (!id) continue;
+      let catalogCursor: string | undefined;
+      const seenCategoryIds = new Set<string>();
+      do {
+        const catalogResponse = await squarePost("/v2/catalog/search-catalog-items", {
+          category_ids: [id],
+          enabled_location_ids: [locationId],
+          product_types: ["REGULAR"],
+          limit: 100,
+          ...(catalogCursor ? { cursor: catalogCursor } : {}),
+        });
+        for (const item of catalogResponse.items || []) {
+          if (!item.id) continue;
+          itemsById.set(item.id, item);
+          seenCategoryIds.add(item.id);
+          if (!itemCategoryNames.has(item.id)) itemCategoryNames.set(item.id, new Set());
+          itemCategoryNames.get(item.id)!.add(name);
+        }
+        catalogCursor = catalogResponse.cursor;
+      } while (catalogCursor);
+      categoryDiagnostics[name] = { catalogItems: seenCategoryIds.size, pricedItems: 0, inStockItems: 0 };
+    }
+    const items = [...itemsById.values()];
 
     const imageIds = Array.from(
       new Set(items.flatMap((item: any) => item.item_data?.image_ids || []))
@@ -354,6 +377,10 @@ export async function GET(request: Request) {
       })
       .filter((item: any) => item && item.priceAmount !== null && item.variationId);
 
+    for (const item of rawProducts) {
+      for (const name of itemCategoryNames.get(item.id) || []) categoryDiagnostics[name].pricedItems++;
+    }
+
     const variationIds = rawProducts
       .map((item: any) => item.variationId)
       .filter(Boolean);
@@ -372,8 +399,13 @@ export async function GET(request: Request) {
       })
       .filter((item: any) => item.stockCount > 0);
 
+    for (const item of products) {
+      for (const name of itemCategoryNames.get(item.id) || []) categoryDiagnostics[name].inStockItems++;
+    }
+
     return NextResponse.json({
       products,
+      ...(isElectronics ? { categoryDiagnostics } : {}),
       count: products.length,
       hiddenBecauseOutOfStock: rawProducts.length - products.length,
       lowStockThreshold: LOW_STOCK_THRESHOLD,
