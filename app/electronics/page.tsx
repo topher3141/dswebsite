@@ -721,7 +721,7 @@ export default function ElectronicsPage() {
                 </div>
 
                 <h1 className="max-w-4xl text-4xl font-black leading-none tracking-tight text-slate-950 md:text-6xl">
-                  TVs & More. Big deals, online only.
+                  Big Screens. Bigger Steals.
                 </h1>
 
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-700 md:text-lg">
