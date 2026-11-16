@@ -183,7 +183,7 @@ async function resolveTvAndElectronicsCategoryIds() {
       cursor = response.cursor;
     } while (cursor);
   }
-  return { ids: [...new Set(ids.values())], missing: ["televisions", "electronics"].filter((name) => !ids.has(name)) };
+  return { ids: [...new Set(ids.values())], namedIds: Object.fromEntries(ids), missing: ["televisions", "electronics"].filter((name) => !ids.has(name)) };
 }
 
 async function squarePost(path: string, body: unknown) {
@@ -276,8 +276,8 @@ export async function GET(request: Request) {
     const categoryDiagnostics: Record<string, { catalogItems: number; pricedItems: number; inStockItems: number }> = {};
     const categorySearches = isElectronics
       ? [
-          { name: "Televisions", id: categoryIds[0] },
-          { name: "Electronics", id: categoryIds[1] },
+          { name: "Televisions", id: collection!.namedIds.televisions },
+          { name: "Electronics", id: collection!.namedIds.electronics },
         ]
       : [{ name: "Featured Finds", id: categoryIds[0] }];
 
@@ -329,75 +329,62 @@ export async function GET(request: Request) {
       );
     }
 
-    const rawProducts = items
-      .map((item: any) => {
-        const itemData = item.item_data || {};
-        const variations = itemData.variations || [];
+    // Square items may have multiple variations. Check every priced variation,
+    // then sell an in-stock variation rather than assuming the first one is available.
+    const pricedVariationsByItem = items.map((item: any) => ({
+      item,
+      variations: (item.item_data?.variations || []).filter((variation: any) =>
+        variation.id && typeof variation.item_variation_data?.price_money?.amount === "number"
+      ),
+    })).filter(({ variations }: any) => variations.length > 0);
 
-        const firstPricedVariation = variations.find(
-          (variation: any) =>
-            variation.item_variation_data?.price_money?.amount != null
-        );
-
-        if (!firstPricedVariation) return null;
-
-        const variationData = firstPricedVariation.item_variation_data || {};
-        const squarePriceMoney = variationData.price_money;
-        const currency = squarePriceMoney?.currency || "USD";
-        const dealsAmount = squarePriceMoney?.amount ?? null;
-        const msrpAmount = findMsrpCents(item, firstPricedVariation);
-
-        const firstImageId = itemData.image_ids?.[0];
-
-        return {
-          id: item.id,
-          variationId: firstPricedVariation.id || null,
-          name: itemData.name || "Untitled Item",
-          description:
-            itemData.description_plaintext ||
-            itemData.description ||
-            "",
-
-          // The stable Square catalog price is the actual sale/check-out price.
-          price: formatMoney(centsToMoney(dealsAmount, currency)),
-          dealsPrice: formatMoney(centsToMoney(dealsAmount, currency)),
-          dealsAmount,
-
-          // MSRP custom attribute is the crossed-out retail price.
-          retailPrice: formatMoney(centsToMoney(msrpAmount, currency)),
-          retailAmount: msrpAmount,
-
-          squarePrice: formatMoney(centsToMoney(dealsAmount, currency)),
-          squarePriceAmount: dealsAmount,
-          priceAmount: dealsAmount,
-          currency,
-          image: firstImageId ? imageMap[firstImageId] : null,
-          squareUrl: null,
-        };
-      })
-      .filter((item: any) => item && item.priceAmount !== null && item.variationId);
-
-    for (const item of rawProducts) {
+    for (const { item } of pricedVariationsByItem) {
       for (const name of itemCategoryNames.get(item.id) || []) categoryDiagnostics[name].pricedItems++;
     }
 
-    const variationIds = rawProducts
-      .map((item: any) => item.variationId)
-      .filter(Boolean);
+    const variationIds = [...new Set(pricedVariationsByItem.flatMap(({ variations }: any) =>
+      variations.map((variation: any) => variation.id as string)
+    ))];
+    const inventoryByVariationId: Record<string, number> = {};
+    // The Square inventory endpoint accepts at most 100 catalog variation IDs per request.
+    for (let offset = 0; offset < variationIds.length; offset += 100) {
+      Object.assign(inventoryByVariationId, await getInventoryCounts(variationIds.slice(offset, offset + 100), locationId));
+    }
 
-    const inventoryByVariationId = await getInventoryCounts(variationIds, locationId);
+    const products = pricedVariationsByItem.flatMap(({ item, variations }: any) => {
+      const availableVariation = variations.find((variation: any) =>
+        (inventoryByVariationId[variation.id] || 0) > 0
+      );
+      if (!availableVariation) return [];
 
-    const products = rawProducts
-      .map((item: any) => {
-        const stockCount = inventoryByVariationId[item.variationId] || 0;
+      const itemData = item.item_data || {};
+      const squarePriceMoney = availableVariation.item_variation_data.price_money;
+      const currency = squarePriceMoney.currency || "USD";
+      const dealsAmount = squarePriceMoney.amount;
+      const msrpAmount = findMsrpCents(item, availableVariation);
+      const firstImageId = itemData.image_ids?.[0];
+      const stockCount = inventoryByVariationId[availableVariation.id] || 0;
 
-        return {
-          ...item,
-          stockCount,
-          lowStock: stockCount > 0 && stockCount <= LOW_STOCK_THRESHOLD,
-        };
-      })
-      .filter((item: any) => item.stockCount > 0);
+      return [{
+        id: item.id,
+        variationId: availableVariation.id,
+        name: itemData.name || "Untitled Item",
+        description: itemData.description_plaintext || itemData.description || "",
+        price: formatMoney(centsToMoney(dealsAmount, currency)),
+        dealsPrice: formatMoney(centsToMoney(dealsAmount, currency)),
+        dealsAmount,
+        retailPrice: formatMoney(centsToMoney(msrpAmount, currency)),
+        retailAmount: msrpAmount,
+        squarePrice: formatMoney(centsToMoney(dealsAmount, currency)),
+        squarePriceAmount: dealsAmount,
+        priceAmount: dealsAmount,
+        currency,
+        image: firstImageId ? imageMap[firstImageId] : null,
+        squareUrl: null,
+        stockCount,
+        lowStock: stockCount <= LOW_STOCK_THRESHOLD,
+      }];
+    });
 
     for (const item of products) {
       for (const name of itemCategoryNames.get(item.id) || []) categoryDiagnostics[name].inStockItems++;
@@ -407,7 +394,7 @@ export async function GET(request: Request) {
       products,
       ...(isElectronics ? { categoryDiagnostics } : {}),
       count: products.length,
-      hiddenBecauseOutOfStock: rawProducts.length - products.length,
+      hiddenBecauseOutOfStock: pricedVariationsByItem.length - products.length,
       lowStockThreshold: LOW_STOCK_THRESHOLD,
     });
   } catch (error: any) {
