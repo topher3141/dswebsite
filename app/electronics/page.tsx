@@ -810,6 +810,7 @@ export default function ElectronicsPage() {
             <>
               <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {visibleProducts.map((item) => {
+                  const itemUrl = `/electronics/${encodeURIComponent(item.id)}`;
                   const savingsPercent = getSavingsPercent(item);
                   const cartQuantity = cartItems.find((cartItem) => cartItem.product.id === item.id)?.quantity || 0;
                   const stockCount = item.stockCount || 0;
@@ -821,9 +822,10 @@ export default function ElectronicsPage() {
                       className="group flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="flex w-full flex-col">
-                        <button
-                          onClick={() => setSelectedProduct(item)}
+                        <a
+                          href={itemUrl}
                           className="relative overflow-hidden text-left"
+                          aria-label={`View ${item.name}`}
                         >
                           {item.image ? (
                             <img
@@ -842,17 +844,17 @@ export default function ElectronicsPage() {
                               Score {savingsPercent}% Off
                             </div>
                           )}
-                        </button>
+                        </a>
 
                         <div className="flex flex-1 flex-col p-5">
-                          <button
-                            onClick={() => setSelectedProduct(item)}
+                          <a
+                            href={itemUrl}
                             className="text-left"
                           >
                             <h3 className="min-h-[4.8rem] text-xl font-black leading-tight text-slate-950 transition hover:text-pink-600">
                               {item.name}
                             </h3>
-                          </button>
+                          </a>
 
                           <div className="mt-3 min-h-[4.5rem]">
                             {item.description ? (
@@ -861,12 +863,12 @@ export default function ElectronicsPage() {
                                   {item.description}
                                 </p>
 
-                                <button
-                                  onClick={() => setSelectedProduct(item)}
-                                  className="mt-2 text-sm font-black text-pink-600 transition hover:text-pink-700"
+                                <a
+                                  href={itemUrl}
+                                  className="mt-2 inline-block text-sm font-black text-pink-600 transition hover:text-pink-700"
                                 >
-                                  View details
-                                </button>
+                                  View item &amp; buy
+                                </a>
                               </>
                             ) : (
                               <p className="text-sm leading-6 text-slate-400">
@@ -879,6 +881,30 @@ export default function ElectronicsPage() {
                             <DealPriceBlock item={item} />
 
                             <StockLine item={item} />
+
+                            <div className="mt-4 flex gap-2">
+                              <a
+                                href={itemUrl}
+                                className="flex-1 rounded-xl border-2 border-teal-700 px-3 py-2.5 text-center text-sm font-black text-teal-800 hover:bg-teal-50"
+                              >
+                                View Item
+                              </a>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const url = new URL(itemUrl, window.location.origin).href;
+                                  try {
+                                    await navigator.clipboard.writeText(url);
+                                    window.alert("Item link copied! Paste it into your Facebook group post.");
+                                  } catch {
+                                    window.prompt("Copy this item link:", url);
+                                  }
+                                }}
+                                className="flex-1 rounded-xl border-2 border-pink-200 px-3 py-2.5 text-sm font-black text-pink-700 hover:bg-pink-50"
+                              >
+                                Copy Link
+                              </button>
+                            </div>
 
                             <p className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-600">
                               <span className="text-teal-700">✅</span>
