@@ -5,6 +5,7 @@ import { useElectronicsCart } from "../useElectronicsCart";
 
 type Product = {
   id: string; variationId?: string | null; name: string; description?: string;
+  sku?: string | null;
   image?: string | null; dealsPrice?: string; price: string;
   dealsAmount?: number | null; retailAmount?: number | null; retailPrice?: string;
   stockCount?: number;
@@ -168,6 +169,7 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
             </div>
             <div className="flex flex-col">
               <h1 className="text-3xl font-black leading-tight md:text-4xl">{product.name}</h1>
+              {product.sku && <p className="mt-2 text-sm font-semibold text-slate-500">SKU: <span className="font-mono text-slate-700">{product.sku}</span></p>}
               {savings ? <span className="mt-4 w-fit rounded-full bg-pink-600 px-4 py-2 text-sm font-black text-white">Score {savings}% Off</span> : null}
               <div className="mt-6 rounded-2xl border border-pink-100 bg-[#fff8ef] p-5">
                 {product.retailPrice && product.retailAmount && product.dealsAmount && product.retailAmount > product.dealsAmount ?
