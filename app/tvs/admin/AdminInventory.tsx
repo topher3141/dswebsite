@@ -5,9 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 type Product = {
   id: string;
   categories?: string[];
-  sku?: string;
-  uniqueCode?: string;
-  skuSource?: "description" | "square" | "catalog";
+  sku?: string | null;
+  skuStatus?: "unique" | "missing" | "duplicate";
   name: string;
   description?: string;
   image?: string | null;
@@ -51,7 +50,7 @@ function facebookPost(product: Product) {
   const retail = product.retailAmount;
   const lines = [
     `📺 ${product.name}`,
-    `Item Code: ${product.uniqueCode || product.sku || product.id}`,
+    ...(product.sku ? [`SKU: ${product.sku}`] : []),
     "",
     `🔥 Our Price: ${formatMoney(price)}`,
   ];
@@ -107,6 +106,7 @@ export default function AdminInventory() {
     listings: products.length,
     units: products.reduce((sum, p) => sum + (p.stockCount || 0), 0),
     missingRetail: products.filter((p) => !p.retailAmount || p.retailAmount <= 0).length,
+    invalidSku: products.filter((p) => p.skuStatus !== "unique").length,
     inventoryValue: products.reduce((sum, p) => sum + (salePrice(p) || 0) * (p.stockCount || 0), 0),
   }), [products]);
 
@@ -114,13 +114,13 @@ export default function AdminInventory() {
     const term = search.trim().toLowerCase();
     const filtered = products.filter((p) =>
       (categoryFilter === "All" || (p.categories || []).includes(categoryFilter)) &&
-      (!term || p.name.toLowerCase().includes(term) || (p.description || "").toLowerCase().includes(term) || (p.sku || "").toLowerCase().includes(term) || (p.uniqueCode || "").toLowerCase().includes(term)) &&
+      (!term || p.name.toLowerCase().includes(term) || (p.description || "").toLowerCase().includes(term) || (p.sku || "").toLowerCase().includes(term)) &&
       (!onlyRetail || (p.retailAmount != null && p.retailAmount > 0))
     );
     const value = (p: Product): number | string => {
       switch (sortBy) {
         case "name": return p.name.toLowerCase();
-        case "sku": return (p.uniqueCode || p.sku || p.id).toLowerCase();
+        case "sku": return (p.sku || "").toLowerCase();
         case "stock": return p.stockCount || 0;
         case "price": return salePrice(p) ?? -1;
         case "retail": return p.retailAmount ?? -1;
@@ -154,11 +154,11 @@ export default function AdminInventory() {
   }
 
   function exportCsv() {
-    const headers = ["Item", "SKU / Unique Code", "SKU Source", "Category", "Quantity", "Price", "Compare At", "Savings %", "Product URL"];
+    const headers = ["Item", "Square SKU", "SKU Status", "Category", "Quantity", "Price", "Compare At", "Savings %", "Product URL"];
     const rows = visible.map(product => [
       product.name,
-      product.uniqueCode || product.sku || product.id,
-      product.skuSource || "catalog",
+      product.sku || "",
+      product.skuStatus || "missing",
       (product.categories || []).join(" / "),
       String(product.stockCount ?? 0),
       formatMoney(salePrice(product)),
@@ -217,12 +217,13 @@ export default function AdminInventory() {
           </div>
         </header>
 
-        <section className="mb-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <section className="mb-7 grid grid-cols-2 gap-3 lg:grid-cols-5">
           {[
             { label: "Available listings", value: String(totals.listings) },
             { label: "Total units", value: String(totals.units) },
             { label: "Inventory at selling price", value: formatMoney(totals.inventoryValue) },
             { label: "Missing compare-at price", value: String(totals.missingRetail) },
+            { label: "Missing / duplicate SKUs", value: String(totals.invalidSku) },
           ].map((metric) => (
             <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-xs font-black uppercase tracking-wide text-slate-500">{metric.label}</p>
@@ -231,6 +232,12 @@ export default function AdminInventory() {
           ))}
         </section>
 
+        {totals.invalidSku > 0 && (
+          <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+            {totals.invalidSku} item(s) have missing or duplicate Square SKUs. Edit the item variations in Square to assign a distinct SKU to each.
+            Product links and checkout still use unique Square catalog IDs.
+          </p>
+        )}
         <section className="rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-5 pt-5">
             {(["All", "Televisions", "Electronics"] as const).map((category) => {
@@ -275,7 +282,7 @@ export default function AdminInventory() {
                 <thead className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-600">
                   <tr>
                     <th scope="col" className="px-5 py-4">{sortHeading("Item", "name")}</th>
-                    <th scope="col" className="px-3 py-4">{sortHeading("SKU / Code", "sku")}</th>
+                    <th scope="col" className="px-3 py-4">{sortHeading("Square SKU", "sku")}</th>
                     <th scope="col" className="px-3 py-4 text-right">{sortHeading("Qty", "stock")}</th>
                     <th scope="col" className="px-3 py-4 text-right">{sortHeading("Our Price", "price")}</th>
                     <th scope="col" className="px-3 py-4 text-right">{sortHeading("Compare At", "retail")}</th>
@@ -298,15 +305,16 @@ export default function AdminInventory() {
                         </div>
                       </td>
                       <td className="px-3 py-3">
-                        <button type="button"
-                          title="Copy item code"
-                          onClick={() => void copy(product.uniqueCode || product.sku || product.id, `sku-${product.id}`)}
-                          className="max-w-[190px] break-all text-left font-mono text-xs font-bold text-teal-800 hover:underline">
-                          {copied === `sku-${product.id}` ? "✓ Copied" : product.uniqueCode || product.sku || product.id}
-                        </button>
-                        <p className="mt-1 text-[10px] text-slate-400">
-                          {product.skuSource === "description" ? "From description" : product.skuSource === "square" ? "Square SKU" : "Square ID fallback"}
-                        </p>
+                        {product.sku ? (
+                          <button type="button" title="Copy Square SKU"
+                            onClick={() => void copy(product.sku!, `sku-${product.id}`)}
+                            className="max-w-[190px] break-all text-left font-mono text-xs font-bold text-teal-800 hover:underline">
+                            {copied === `sku-${product.id}` ? "✓ Copied" : product.sku}
+                          </button>
+                        ) : <span className="text-xs font-bold text-red-600">Missing SKU</span>}
+                        {product.skuStatus === "duplicate" && (
+                          <p className="mt-1 text-xs font-bold text-red-600">Duplicate SKU — update in Square</p>
+                        )}
                       </td>
                       <td className="px-3 py-3 text-right font-black">
                         <span className={(product.stockCount || 0) <= 3 ? "text-pink-600" : "text-teal-700"}>
