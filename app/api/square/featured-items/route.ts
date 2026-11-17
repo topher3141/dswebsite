@@ -123,6 +123,17 @@ function findRetailPriceInDescription(description: unknown): number | null {
   return Math.round(dollars * 100);
 }
 
+function findSkuInDescription(description: unknown): string | null {
+  if (typeof description !== "string" || !description.trim()) return null;
+  // Parse only explicitly labeled SKUs. Never guess from model numbers or prices.
+  const text = description
+    .replace(/<[^>]*>/g, "\n")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#(?:35|x23);/gi, "#");
+  const match = text.match(/\b(?:SKU|Item\s*(?:#|No\.?|Number|Code))\s*(?:[:#=–—-]\s*|\s+)([A-Za-z0-9][A-Za-z0-9._/-]{1,63})\b/i);
+  return match ? match[1] : null;
+}
+
 function findMsrpCents(item: any, variation: any) {
   const itemData = item?.item_data || {};
   const variationData = variation?.item_variation_data || {};
@@ -442,6 +453,8 @@ export async function GET(request: Request) {
         categories: [...(itemCategoryNames.get(item.id) || [])].filter(name => name === "Televisions" || name === "Electronics"),
         variationId: availableVariation.id,
         name: itemData.name || "Untitled Item",
+        descriptionSku: findSkuInDescription(itemData.description_plaintext || itemData.description),
+        squareSku: availableVariation.item_variation_data?.sku?.trim() || null,
         description: itemData.description_plaintext || itemData.description || "",
         price: formatMoney(centsToMoney(dealsAmount, currency)),
         dealsPrice: formatMoney(centsToMoney(dealsAmount, currency)),
@@ -458,6 +471,28 @@ export async function GET(request: Request) {
         lowStock: stockCount <= LOW_STOCK_THRESHOLD,
       }];
     });
+
+    // Prefer an SKU explicitly recorded in the description, then a Square
+    // variation SKU. Guarantee a distinct reference for duplicate/missing SKUs
+    // without modifying the actual Square catalog.
+    const preferredCodes = products.map((item: any) =>
+      item.descriptionSku || item.squareSku || item.id
+    );
+    const codeCounts = new Map<string, number>();
+    for (const code of preferredCodes) {
+      const normalized = code.toLowerCase();
+      codeCounts.set(normalized, (codeCounts.get(normalized) || 0) + 1);
+    }
+    for (const [index, item] of products.entries()) {
+      const preferred = preferredCodes[index];
+      item.sku = preferred;
+      item.skuSource = item.descriptionSku ? "description" : item.squareSku ? "square" : "catalog";
+      item.uniqueCode = (codeCounts.get(preferred.toLowerCase()) || 0) > 1
+        ? `${preferred}-${item.id}`
+        : preferred;
+      delete item.descriptionSku;
+      delete item.squareSku;
+    }
 
     for (const item of products) {
       for (const name of itemCategoryNames.get(item.id) || []) categoryDiagnostics[name].inStockItems++;
