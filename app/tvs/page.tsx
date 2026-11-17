@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useElectronicsCart } from "./useElectronicsCart";
 
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/1956095674576022";
@@ -466,6 +466,34 @@ function CartDrawer({
   );
 }
 
+function DescriptionPreview({ description, itemUrl }: { description: string; itemUrl: string }) {
+  const paragraphRef = useRef<HTMLParagraphElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    const element = paragraphRef.current;
+    if (!element) return;
+    const checkOverflow = () => setIsTruncated(element.scrollHeight > element.clientHeight + 1);
+    checkOverflow();
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [description]);
+
+  return (
+    <>
+      <p ref={paragraphRef} className="line-clamp-3 text-sm leading-6 text-slate-600">
+        {description}
+      </p>
+      {isTruncated && (
+        <a href={itemUrl} className="mt-2 inline-block text-sm font-black text-pink-600 hover:text-pink-700">
+          Read more
+        </a>
+      )}
+    </>
+  );
+}
+
 export default function ElectronicsPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
@@ -755,13 +783,7 @@ export default function ElectronicsPage() {
 
                           <div className="mt-3 min-h-[4.5rem]">
                             {item.description ? (
-                              <>
-                                <p className="line-clamp-3 text-sm leading-6 text-slate-600">
-                                  {item.description}
-                                </p>
-
-
-                              </>
+                              <DescriptionPreview description={item.description} itemUrl={itemUrl} />
                             ) : (
                               <p className="text-sm leading-6 text-slate-400">
                                 See item details above.
