@@ -423,7 +423,7 @@ export async function GET(request: Request) {
       Object.assign(inventoryByVariationId, await getInventoryCounts(variationIds.slice(offset, offset + 100), locationId));
     }
 
-    const products = pricedVariationsByItem.flatMap(({ item, variations }: any) => {
+    const rawAvailableProducts = pricedVariationsByItem.flatMap(({ item, variations }: any) => {
       const availableVariation = variations.find((variation: any) =>
         (inventoryByVariationId[variation.id] || 0) > 0
       );
@@ -475,24 +475,26 @@ export async function GET(request: Request) {
     // Prefer an SKU explicitly recorded in the description, then a Square
     // variation SKU. Guarantee a distinct reference for duplicate/missing SKUs
     // without modifying the actual Square catalog.
-    const preferredCodes = products.map((item: any) =>
-      item.descriptionSku || item.squareSku || item.id
+    const preferredCodes = rawAvailableProducts.map((item) =>
+      String(item.descriptionSku || item.squareSku || item.id)
     );
     const codeCounts = new Map<string, number>();
     for (const code of preferredCodes) {
       const normalized = code.toLowerCase();
       codeCounts.set(normalized, (codeCounts.get(normalized) || 0) + 1);
     }
-    for (const [index, item] of products.entries()) {
+    const products = rawAvailableProducts.map((item, index) => {
+      const { descriptionSku, squareSku, ...product } = item;
       const preferred = preferredCodes[index];
-      item.sku = preferred;
-      item.skuSource = item.descriptionSku ? "description" : item.squareSku ? "square" : "catalog";
-      item.uniqueCode = (codeCounts.get(preferred.toLowerCase()) || 0) > 1
-        ? `${preferred}-${item.id}`
-        : preferred;
-      delete item.descriptionSku;
-      delete item.squareSku;
-    }
+      return {
+        ...product,
+        sku: preferred,
+        skuSource: descriptionSku ? "description" : squareSku ? "square" : "catalog",
+        uniqueCode: (codeCounts.get(preferred.toLowerCase()) || 0) > 1
+          ? `${preferred}-${item.id}`
+          : preferred,
+      };
+    });
 
     for (const item of products) {
       for (const name of itemCategoryNames.get(item.id) || []) categoryDiagnostics[name].inStockItems++;
