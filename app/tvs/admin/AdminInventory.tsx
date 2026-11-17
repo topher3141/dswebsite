@@ -5,6 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 type Product = {
   id: string;
   categories?: string[];
+  sku?: string;
+  uniqueCode?: string;
+  skuSource?: "description" | "square" | "catalog";
   name: string;
   description?: string;
   image?: string | null;
@@ -18,7 +21,7 @@ type Product = {
   currency?: string;
 };
 
-type SortKey = "name" | "stock" | "price" | "retail" | "savings";
+type SortKey = "name" | "sku" | "stock" | "price" | "retail" | "savings";
 type SortDirection = "asc" | "desc";
 
 const SITE_ORIGIN = "https://www.dealsandstealsmd.com";
@@ -48,6 +51,7 @@ function facebookPost(product: Product) {
   const retail = product.retailAmount;
   const lines = [
     `📺 ${product.name}`,
+    `Item Code: ${product.uniqueCode || product.sku || product.id}`,
     "",
     `🔥 Our Price: ${formatMoney(price)}`,
   ];
@@ -110,12 +114,13 @@ export default function AdminInventory() {
     const term = search.trim().toLowerCase();
     const filtered = products.filter((p) =>
       (categoryFilter === "All" || (p.categories || []).includes(categoryFilter)) &&
-      (!term || p.name.toLowerCase().includes(term) || (p.description || "").toLowerCase().includes(term)) &&
+      (!term || p.name.toLowerCase().includes(term) || (p.description || "").toLowerCase().includes(term) || (p.sku || "").toLowerCase().includes(term) || (p.uniqueCode || "").toLowerCase().includes(term)) &&
       (!onlyRetail || (p.retailAmount != null && p.retailAmount > 0))
     );
     const value = (p: Product): number | string => {
       switch (sortBy) {
         case "name": return p.name.toLowerCase();
+        case "sku": return (p.uniqueCode || p.sku || p.id).toLowerCase();
         case "stock": return p.stockCount || 0;
         case "price": return salePrice(p) ?? -1;
         case "retail": return p.retailAmount ?? -1;
@@ -148,6 +153,33 @@ export default function AdminInventory() {
     }
   }
 
+  function exportCsv() {
+    const headers = ["Item", "SKU / Unique Code", "SKU Source", "Category", "Quantity", "Price", "Compare At", "Savings %", "Product URL"];
+    const rows = visible.map(product => [
+      product.name,
+      product.uniqueCode || product.sku || product.id,
+      product.skuSource || "catalog",
+      (product.categories || []).join(" / "),
+      String(product.stockCount ?? 0),
+      formatMoney(salePrice(product)),
+      formatMoney(product.retailAmount),
+      savingsPercent(product) == null ? "" : String(savingsPercent(product)),
+      productLink(product),
+    ]);
+    const escapeCell = (value: string) => {
+      const safe = /^[=+@-]/.test(value) ? "'" + value : value;
+      return '"' + safe.replace(/"/g, '""') + '"';
+    };
+    const csv = [headers, ...rows].map(row => row.map(escapeCell).join(",")).join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "deals-and-steals-tvs-inventory.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   function sortHeading(title: string, key: SortKey) {
     return (
       <button type="button" onClick={() => chooseSort(key)}
@@ -174,6 +206,10 @@ export default function AdminInventory() {
               className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-black hover:bg-slate-50">
               View storefront ↗
             </a>
+            <button type="button" onClick={exportCsv} disabled={loading || visible.length === 0}
+              className="rounded-xl border border-teal-700 bg-white px-5 py-3 text-sm font-black text-teal-800 hover:bg-teal-50 disabled:opacity-50">
+              Export CSV
+            </button>
             <button type="button" onClick={() => void load(true)} disabled={loading || refreshing}
               className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white hover:bg-teal-800 disabled:opacity-50">
               {refreshing ? "Refreshing…" : "↻ Refresh Inventory"}
@@ -239,6 +275,7 @@ export default function AdminInventory() {
                 <thead className="bg-slate-50 text-xs font-black uppercase tracking-wide text-slate-600">
                   <tr>
                     <th scope="col" className="px-5 py-4">{sortHeading("Item", "name")}</th>
+                    <th scope="col" className="px-3 py-4">{sortHeading("SKU / Code", "sku")}</th>
                     <th scope="col" className="px-3 py-4 text-right">{sortHeading("Qty", "stock")}</th>
                     <th scope="col" className="px-3 py-4 text-right">{sortHeading("Our Price", "price")}</th>
                     <th scope="col" className="px-3 py-4 text-right">{sortHeading("Compare At", "retail")}</th>
@@ -259,6 +296,17 @@ export default function AdminInventory() {
                             <p className="mt-1 text-xs text-slate-400">{product.id}</p>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button type="button"
+                          title="Copy item code"
+                          onClick={() => void copy(product.uniqueCode || product.sku || product.id, `sku-${product.id}`)}
+                          className="max-w-[190px] break-all text-left font-mono text-xs font-bold text-teal-800 hover:underline">
+                          {copied === `sku-${product.id}` ? "✓ Copied" : product.uniqueCode || product.sku || product.id}
+                        </button>
+                        <p className="mt-1 text-[10px] text-slate-400">
+                          {product.skuSource === "description" ? "From description" : product.skuSource === "square" ? "Square SKU" : "Square ID fallback"}
+                        </p>
                       </td>
                       <td className="px-3 py-3 text-right font-black">
                         <span className={(product.stockCount || 0) <= 3 ? "text-pink-600" : "text-teal-700"}>
