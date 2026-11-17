@@ -123,17 +123,6 @@ function findRetailPriceInDescription(description: unknown): number | null {
   return Math.round(dollars * 100);
 }
 
-function findSkuInDescription(description: unknown): string | null {
-  if (typeof description !== "string" || !description.trim()) return null;
-  // Parse only explicitly labeled SKUs. Never guess from model numbers or prices.
-  const text = description
-    .replace(/<[^>]*>/g, "\n")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&#(?:35|x23);/gi, "#");
-  const match = text.match(/\b(?:SKU|Item\s*(?:#|No\.?|Number|Code))\s*(?:[:#=–—-]\s*|\s+)([A-Za-z0-9][A-Za-z0-9._/-]{1,63})\b/i);
-  return match ? match[1] : null;
-}
-
 function findMsrpCents(item: any, variation: any) {
   const itemData = item?.item_data || {};
   const variationData = variation?.item_variation_data || {};
@@ -453,7 +442,6 @@ export async function GET(request: Request) {
         categories: [...(itemCategoryNames.get(item.id) || [])].filter(name => name === "Televisions" || name === "Electronics"),
         variationId: availableVariation.id,
         name: itemData.name || "Untitled Item",
-        descriptionSku: findSkuInDescription(itemData.description_plaintext || itemData.description),
         squareSku: availableVariation.item_variation_data?.sku?.trim() || null,
         description: itemData.description_plaintext || itemData.description || "",
         price: formatMoney(centsToMoney(dealsAmount, currency)),
@@ -472,27 +460,21 @@ export async function GET(request: Request) {
       }];
     });
 
-    // Prefer an SKU explicitly recorded in the description, then a Square
-    // variation SKU. Guarantee a distinct reference for duplicate/missing SKUs
-    // without modifying the actual Square catalog.
-    const preferredCodes = rawAvailableProducts.map((item) =>
-      String(item.descriptionSku || item.squareSku || item.id)
-    );
-    const codeCounts = new Map<string, number>();
-    for (const code of preferredCodes) {
-      const normalized = code.toLowerCase();
-      codeCounts.set(normalized, (codeCounts.get(normalized) || 0) + 1);
+    // Only use the SKU stored on the Square variation. Never derive a SKU
+    // from the description or manufacture a replacement for duplicate/missing SKUs.
+    const skuCounts = new Map<string, number>();
+    for (const item of rawAvailableProducts) {
+      if (!item.squareSku) continue;
+      const key = String(item.squareSku).trim().toLowerCase();
+      skuCounts.set(key, (skuCounts.get(key) || 0) + 1);
     }
-    const products = rawAvailableProducts.map((item, index) => {
-      const { descriptionSku, squareSku, ...product } = item;
-      const preferred = preferredCodes[index];
+    const products = rawAvailableProducts.map((item) => {
+      const { squareSku, ...product } = item;
+      const sku = squareSku ? String(squareSku).trim() : null;
       return {
         ...product,
-        sku: preferred,
-        skuSource: descriptionSku ? "description" : squareSku ? "square" : "catalog",
-        uniqueCode: (codeCounts.get(preferred.toLowerCase()) || 0) > 1
-          ? `${preferred}-${item.id}`
-          : preferred,
+        sku,
+        skuStatus: !sku ? "missing" : (skuCounts.get(sku.toLowerCase()) || 0) > 1 ? "duplicate" : "unique",
       };
     });
 
