@@ -767,6 +767,13 @@ export default function ElectronicsPage() {
                       className="group flex h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="flex w-full flex-col">
+                        {savingsPercent && (
+                          <div className="flex min-h-12 items-center bg-[#fff8ef] px-4 py-2">
+                            <span className="inline-flex rounded-full bg-pink-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-sm">
+                              Score {savingsPercent}% Off
+                            </span>
+                          </div>
+                        )}
                         <a
                           href={itemUrl}
                           className="relative block overflow-hidden text-left"
@@ -777,11 +784,6 @@ export default function ElectronicsPage() {
                           ) : (
                             <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
                               Image Coming Soon
-                            </div>
-                          )}
-                          {savingsPercent && (
-                            <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-white shadow-md">
-                              Score {savingsPercent}% Off
                             </div>
                           )}
                         </a>
