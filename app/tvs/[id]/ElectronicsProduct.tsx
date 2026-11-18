@@ -6,7 +6,7 @@ import { useElectronicsCart } from "../useElectronicsCart";
 type Product = {
   id: string; variationId?: string | null; name: string; description?: string;
   sku?: string | null;
-  image?: string | null; dealsPrice?: string; price: string;
+  image?: string | null; images?: string[]; dealsPrice?: string; price: string;
   dealsAmount?: number | null; retailAmount?: number | null; retailPrice?: string;
   stockCount?: number;
 };
@@ -19,6 +19,8 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isImageExpanded, setIsImageExpanded] = useState(false);
   useEffect(() => {
     let active = true;
     async function load() {
@@ -27,7 +29,10 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Unable to load item.");
         const item = (data.products || []).find((p: Product) => p.id === itemId);
-        if (active) setProduct(item || null);
+        if (active) {
+          setProduct(item || null);
+          setActiveImageIndex(0);
+        }
       } catch (e: any) {
         if (active) setError(e?.message || "Unable to load item.");
       } finally { if (active) setLoading(false); }
@@ -79,6 +84,9 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
       window.prompt("Copy this item link:", link);
     }
   }
+
+  const images = product?.images?.length ? product.images : product?.image ? [product.image] : [];
+  const activeImage = images[activeImageIndex] || images[0];
 
   const savings = product?.retailAmount && product?.dealsAmount && product.retailAmount > product.dealsAmount
     ? Math.round((1 - product.dealsAmount / product.retailAmount) * 100) : null;
@@ -151,6 +159,22 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
           </aside>
         </div>
       )}
+      {isImageExpanded && activeImage && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/95 p-4" role="dialog" aria-modal="true" aria-label="Enlarged product photo">
+          <button type="button" onClick={() => setIsImageExpanded(false)}
+            aria-label="Close enlarged photo" className="absolute right-4 top-4 z-10 rounded-full bg-white px-4 py-2 text-lg font-black text-slate-950">✕</button>
+          {images.length > 1 && (
+            <button type="button" onClick={() => setActiveImageIndex(index => (index - 1 + images.length) % images.length)}
+              aria-label="Previous enlarged photo" className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white px-4 py-2 text-2xl font-black">‹</button>
+          )}
+          <img src={activeImage} alt={`${product?.name || "Product"} photo ${activeImageIndex + 1}`}
+            className="max-h-[90vh] max-w-full object-contain" />
+          {images.length > 1 && (
+            <button type="button" onClick={() => setActiveImageIndex(index => (index + 1) % images.length)}
+              aria-label="Next enlarged photo" className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white px-4 py-2 text-2xl font-black">›</button>
+          )}
+        </div>
+      )}
       <div className="mx-auto max-w-6xl px-5 py-9">
         <p className="mb-5 text-xs font-black uppercase tracking-[0.22em] text-pink-600">Online exclusive · Local pickup</p>
         {loading ? (
@@ -163,9 +187,44 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
           </div>
         ) : (
           <div className="grid gap-8 rounded-[2rem] bg-white p-5 shadow-sm md:grid-cols-2 md:p-8">
-            <div className="overflow-hidden rounded-3xl bg-[#fff8ef]">
-              {product.image ? <img src={product.image} alt={product.name} className="w-full object-contain" /> :
-                <div className="flex min-h-80 items-center justify-center text-slate-500">Image coming soon</div>}
+            <div className="min-w-0">
+              <div className="relative flex h-[340px] items-center justify-center overflow-hidden rounded-3xl bg-[#fff8ef] p-4 sm:h-[450px] lg:h-[530px]">
+                {activeImage ? (
+                  <button type="button" onClick={() => setIsImageExpanded(true)}
+                    className="flex h-full w-full cursor-zoom-in items-center justify-center"
+                    aria-label="View larger product photo">
+                    <img src={activeImage} alt={`${product.name} photo ${activeImageIndex + 1}`}
+                      className="h-full w-full object-contain" />
+                  </button>
+                ) : <div className="font-bold text-slate-500">Image coming soon</div>}
+                {images.length > 1 && (
+                  <>
+                    <button type="button" onClick={() => setActiveImageIndex(index => (index - 1 + images.length) % images.length)}
+                      aria-label="Previous photo"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/95 px-3 py-2 text-xl font-black text-slate-800 shadow-md hover:bg-white">‹</button>
+                    <button type="button" onClick={() => setActiveImageIndex(index => (index + 1) % images.length)}
+                      aria-label="Next photo"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/95 px-3 py-2 text-xl font-black text-slate-800 shadow-md hover:bg-white">›</button>
+                    <span className="absolute bottom-3 right-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-700">
+                      {activeImageIndex + 1} / {images.length}
+                    </span>
+                  </>
+                )}
+              </div>
+              {images.length > 1 && (
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-2" aria-label="Product photo thumbnails">
+                  {images.map((image, index) => (
+                    <button key={`${image}-${index}`} type="button" onClick={() => setActiveImageIndex(index)}
+                      aria-label={`Show photo ${index + 1}`}
+                      aria-pressed={index === activeImageIndex}
+                      className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white p-1 transition ${
+                        index === activeImageIndex ? "border-pink-600" : "border-slate-200 hover:border-pink-300"
+                      }`}>
+                      <img src={image} alt="" loading="lazy" className="h-full w-full object-contain" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex flex-col">
               <h1 className="text-3xl font-black leading-tight md:text-4xl">{product.name}</h1>
