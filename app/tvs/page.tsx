@@ -749,23 +749,25 @@ export default function ElectronicsPage() {
                       <div className="flex w-full flex-col">
                         <a
                           href={itemUrl}
-                          className="relative overflow-hidden text-left"
+                          className="relative block overflow-hidden bg-[#f8f6f3] text-left"
                           aria-label={`View ${item.name}`}
                         >
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="h-56 w-full bg-[#fff8ef] object-contain p-3 transition duration-700 group-hover:scale-[1.03]"
-                            />
-                          ) : (
-                            <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
-                              Image Coming Soon
-                            </div>
-                          )}
-
+                          <div className="flex aspect-[4/3] w-full items-center justify-center p-3 sm:p-4">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                loading="lazy"
+                                className="block h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.025]"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center rounded-xl bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
+                                Image Coming Soon
+                              </div>
+                            )}
+                          </div>
                           {savingsPercent && (
-                            <div className="absolute left-4 top-4 rotate-[-2deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-wide text-white shadow-md">
+                            <div className="absolute left-3 top-3 rotate-[-2deg] rounded-full bg-pink-600 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white shadow-md">
                               Score {savingsPercent}% Off
                             </div>
                           )}
