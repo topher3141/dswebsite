@@ -756,7 +756,7 @@ export default function ElectronicsPage() {
                             <img
                               src={item.image}
                               alt={item.name}
-                              className="h-56 w-full object-cover transition duration-700 group-hover:scale-105"
+                              className="h-56 w-full bg-[#fff8ef] object-contain p-3 transition duration-700 group-hover:scale-[1.03]"
                             />
                           ) : (
                             <div className="flex h-56 w-full items-center justify-center bg-[#fff8ef] text-sm font-black uppercase tracking-wide text-slate-500">
