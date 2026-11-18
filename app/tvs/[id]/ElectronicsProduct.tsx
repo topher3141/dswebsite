@@ -188,13 +188,13 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
         ) : (
           <div className="grid gap-8 rounded-[2rem] bg-white p-5 shadow-sm md:grid-cols-2 md:p-8">
             <div className="min-w-0">
-              <div className="relative flex h-[340px] items-center justify-center overflow-hidden rounded-3xl bg-[#fff8ef] p-4 sm:h-[450px] lg:h-[530px]">
+              <div className="relative flex min-h-[250px] items-center justify-center rounded-3xl bg-[#fff8ef] p-2 sm:p-3">
                 {activeImage ? (
                   <button type="button" onClick={() => setIsImageExpanded(true)}
-                    className="flex h-full w-full cursor-zoom-in items-center justify-center"
+                    className="flex w-full cursor-zoom-in items-center justify-center"
                     aria-label="View larger product photo">
                     <img src={activeImage} alt={`${product.name} photo ${activeImageIndex + 1}`}
-                      className="h-full w-full object-contain" />
+                      className="block h-auto w-auto max-h-[75vh] max-w-full object-contain" />
                   </button>
                 ) : <div className="font-bold text-slate-500">Image coming soon</div>}
                 {images.length > 1 && (
@@ -211,6 +211,15 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
                   </>
                 )}
               </div>
+              {activeImage && (
+                <div className="mt-2 flex items-center justify-end gap-3 px-2">
+                  <span className="text-xs text-slate-500">Image as provided by Square</span>
+                  <a href={activeImage} target="_blank" rel="noopener noreferrer"
+                    className="text-xs font-bold text-teal-700 underline underline-offset-2 hover:text-teal-900">
+                    Open original photo ↗
+                  </a>
+                </div>
+              )}
               {images.length > 1 && (
                 <div className="mt-3 flex gap-2 overflow-x-auto pb-2" aria-label="Product photo thumbnails">
                   {images.map((image, index) => (
