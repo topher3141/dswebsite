@@ -188,13 +188,13 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
         ) : (
           <div className="grid gap-8 rounded-[2rem] bg-white p-5 shadow-sm md:grid-cols-2 md:p-8">
             <div className="min-w-0">
-              <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-3xl bg-[#fff8ef] p-5 sm:p-7">
+              <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-3xl bg-[#fff8ef] p-1 sm:p-2">
                 {activeImage ? (
                   <button type="button" onClick={() => setIsImageExpanded(true)}
                     className="flex h-full w-full cursor-zoom-in items-center justify-center"
                     aria-label="View larger product photo">
                     <img src={activeImage} alt={`${product.name} photo ${activeImageIndex + 1}`}
-                      className="block max-h-[88%] max-w-[88%] object-contain" />
+                      className="block h-full w-full object-contain" />
                   </button>
                 ) : <div className="font-bold text-slate-500">Image coming soon</div>}
                 {images.length > 1 && (
