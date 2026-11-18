@@ -237,7 +237,11 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
                 <p className="mt-1 text-5xl font-black">{product.dealsPrice || product.price}</p>
               </div>
               <p className="mt-5 font-bold text-teal-700">{product.stockCount === 1 ? "Only 1 left in stock" : `${product.stockCount} available`}</p>
-              <p className="mt-4 leading-7 text-slate-600">These special finds are only available to order online, and will be ready to pickup the next day we are open!</p>
+              <div className="mt-5 border-t border-slate-200 pt-5">
+                <h2 className="text-lg font-black">Item details</h2>
+                <p className="mt-3 whitespace-pre-line break-words leading-7 text-slate-700">{product.description || "Please contact us for more information."}</p>
+              </div>
+
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <button onClick={buyNow}
                   disabled={isBuyingNow || !product.variationId || !product.stockCount}
@@ -255,11 +259,11 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
                 className="mt-3 self-start rounded-md px-2 py-1.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-pink-700">
                 {copyDone ? "✓ Link copied" : "🔗 Copy item link"}
               </button>
-              {error && <p role="alert" className="mt-4 text-sm font-bold text-red-600">{error}</p>}
-              <div className="mt-8 border-t border-slate-200 pt-5">
-                <h2 className="text-lg font-black">Item details</h2>
-                <p className="mt-3 whitespace-pre-line break-words leading-7 text-slate-700">{product.description || "Please contact us for more information."}</p>
+              <div className="mt-6 rounded-xl bg-[#fff8ef] px-4 py-3 text-sm leading-6 text-slate-600">
+                These special finds are only available to order online, and will be ready to pickup the next day we are open!
               </div>
+              {error && <p role="alert" className="mt-4 text-sm font-bold text-red-600">{error}</p>}
+
             </div>
           </div>
         )}
