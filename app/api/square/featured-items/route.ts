@@ -373,21 +373,18 @@ export async function GET(request: Request) {
 
     let imageMap: Record<string, string> = {};
 
-    if (imageIds.length > 0) {
+    // Square batch-retrieve supports at most 100 objects per request.
+    // Retrieve all item photos, preserving the order of item_data.image_ids.
+    for (let offset = 0; offset < imageIds.length; offset += 100) {
       const imageResponse = await squarePost("/v2/catalog/batch-retrieve", {
-        object_ids: imageIds,
+        object_ids: imageIds.slice(offset, offset + 100),
         include_related_objects: false,
       });
-
-      imageMap = (imageResponse.objects || []).reduce(
-        (map: Record<string, string>, object: any) => {
-          if (object.type === "IMAGE" && object.image_data?.url) {
-            map[object.id] = object.image_data.url;
-          }
-          return map;
-        },
-        {}
-      );
+      for (const object of imageResponse.objects || []) {
+        if (object.type === "IMAGE" && object.image_data?.url) {
+          imageMap[object.id] = object.image_data.url;
+        }
+      }
     }
 
     // Square items may have multiple variations. Check every priced variation,
@@ -434,7 +431,11 @@ export async function GET(request: Request) {
         (descriptionRetailAmount !== null && descriptionRetailAmount > dealsAmount
           ? descriptionRetailAmount
           : null);
-      const firstImageId = itemData.image_ids?.[0];
+      const images: string[] = [...new Set<string>(
+        (itemData.image_ids || [])
+          .map((id: string) => imageMap[id])
+          .filter((url: unknown): url is string => typeof url === "string" && url.length > 0)
+      )];
       const stockCount = inventoryByVariationId[availableVariation.id] || 0;
 
       return [{
@@ -453,7 +454,8 @@ export async function GET(request: Request) {
         squarePriceAmount: dealsAmount,
         priceAmount: dealsAmount,
         currency,
-        image: firstImageId ? imageMap[firstImageId] : null,
+        image: images[0] || null,
+        images,
         squareUrl: null,
         stockCount,
         lowStock: stockCount <= LOW_STOCK_THRESHOLD,
