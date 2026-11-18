@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ElectronicsProduct from "./ElectronicsProduct";
+import { fetchSquareItemImage } from "./squareImage";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -30,10 +31,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const rawDescription = item.item_data?.description_plaintext || item.item_data?.description || "";
     const description = String(rawDescription).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180) ||
       "Order this special find online from Deals & Steals for local pickup.";
-    const imageIds = item.item_data?.image_ids || [];
-    const image = (data.related_objects || []).find((obj: any) =>
-      obj.type === "IMAGE" && imageIds.includes(obj.id)
-    )?.image_data?.url;
+    const image = await fetchSquareItemImage(id);
+    // Use an image served from our own domain so social crawlers can retrieve
+    // it without relying on Square's CDN access or catalog related_objects.
+    const imageUrl = image
+      ? `https://www.dealsandstealsmd.com/tvs/${encodeURIComponent(id)}/image`
+      : null;
     const url = `https://www.dealsandstealsmd.com/tvs/${encodeURIComponent(id)}`;
     return {
       title: `${name} | Deals & Steals`,
@@ -41,10 +44,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       alternates: { canonical: url },
       openGraph: {
         title: `${name} | Deals & Steals`, description, url,
-        type: "website", ...(image ? { images: [{ url: image, alt: name }] } : {}),
+        type: "website", ...(imageUrl ? { images: [{ url: imageUrl, alt: name }] } : {}),
       },
       twitter: { card: "summary_large_image", title: name, description,
-        ...(image ? { images: [image] } : {}) },
+        ...(imageUrl ? { images: [imageUrl] } : {}) },
     };
   } catch {
     return fallback;
