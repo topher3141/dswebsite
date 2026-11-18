@@ -189,6 +189,11 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
           <div className="grid gap-8 rounded-[2rem] bg-white p-5 shadow-sm md:grid-cols-2 md:p-8">
             <div className="min-w-0">
               <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-3xl bg-[#fff8ef] p-1 sm:p-2">
+                {savings ? (
+                  <span className="absolute left-3 top-3 z-10 -rotate-[4deg] rounded-full bg-pink-600 px-4 py-2 text-sm font-black text-white shadow-md">
+                    Score {savings}% Off
+                  </span>
+                ) : null}
                 {activeImage ? (
                   <button type="button" onClick={() => setIsImageExpanded(true)}
                     className="flex h-full w-full cursor-zoom-in items-center justify-center"
@@ -225,23 +230,6 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
                   ))}
                 </div>
               )}
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-3xl font-black leading-tight md:text-4xl">{product.name}</h1>
-              {product.sku && <p className="mt-2 text-sm font-semibold text-slate-500">SKU: <span className="font-mono text-slate-700">{product.sku}</span></p>}
-              {savings ? <span className="mt-4 w-fit rounded-full bg-pink-600 px-4 py-2 text-sm font-black text-white">Score {savings}% Off</span> : null}
-              <div className="mt-6 rounded-2xl border border-pink-100 bg-[#fff8ef] p-5">
-                {product.retailPrice && product.retailAmount && product.dealsAmount && product.retailAmount > product.dealsAmount ?
-                  <p className="text-sm font-bold text-slate-500">Retail: <span className="line-through">{product.retailPrice}</span></p> : null}
-                <p className="mt-2 text-xs font-black uppercase tracking-widest text-pink-600">Your Deal</p>
-                <p className="mt-1 text-5xl font-black">{product.dealsPrice || product.price}</p>
-              </div>
-              <p className="mt-5 font-bold text-teal-700">{product.stockCount === 1 ? "Only 1 left in stock" : `${product.stockCount} available`}</p>
-              <div className="mt-5 border-t border-slate-200 pt-5">
-                <h2 className="text-lg font-black">Item details</h2>
-                <p className="mt-3 whitespace-pre-line break-words leading-7 text-slate-700">{product.description || "Please contact us for more information."}</p>
-              </div>
-
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <button onClick={buyNow}
                   disabled={isBuyingNow || !product.variationId || !product.stockCount}
@@ -259,6 +247,23 @@ export default function ElectronicsProduct({ itemId }: { itemId: string }) {
                 className="mt-3 self-start rounded-md px-2 py-1.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-pink-700">
                 {copyDone ? "✓ Link copied" : "🔗 Copy item link"}
               </button>
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-black leading-tight md:text-4xl">{product.name}</h1>
+              {product.sku && <p className="mt-2 text-sm font-semibold text-slate-500">SKU: <span className="font-mono text-slate-700">{product.sku}</span></p>}
+
+              <div className="mt-6 rounded-2xl border border-pink-100 bg-[#fff8ef] p-5">
+                {product.retailPrice && product.retailAmount && product.dealsAmount && product.retailAmount > product.dealsAmount ?
+                  <p className="text-sm font-bold text-slate-500">Retail: <span className="line-through">{product.retailPrice}</span></p> : null}
+                <p className="mt-2 text-xs font-black uppercase tracking-widest text-pink-600">Your Deal</p>
+                <p className="mt-1 text-5xl font-black">{product.dealsPrice || product.price}</p>
+              </div>
+              <p className="mt-5 font-bold text-teal-700">{product.stockCount === 1 ? "Only 1 left in stock" : `${product.stockCount} available`}</p>
+              <div className="mt-5 border-t border-slate-200 pt-5">
+                <h2 className="text-lg font-black">Item details</h2>
+                <p className="mt-3 whitespace-pre-line break-words leading-7 text-slate-700">{product.description || "Please contact us for more information."}</p>
+              </div>
+
               <div className="mt-6 rounded-xl bg-[#fff8ef] px-4 py-3 text-sm leading-6 text-slate-600">
                 These special finds are only available to order online, and will be ready to pickup the next day we are open!
               </div>
