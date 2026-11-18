@@ -768,8 +768,8 @@ export default function ElectronicsPage() {
                     >
                       <div className="flex w-full flex-col">
                         {savingsPercent && (
-                          <div className="flex min-h-12 items-center bg-[#fff8ef] px-4 py-2">
-                            <span className="inline-flex rounded-full bg-pink-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-sm">
+                          <div className="relative h-10 bg-[#fff8ef]">
+                            <span className="absolute left-4 top-3 z-10 inline-flex translate-y-2 -rotate-[4deg] rounded-full bg-pink-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-md">
                               Score {savingsPercent}% Off
                             </span>
                           </div>
