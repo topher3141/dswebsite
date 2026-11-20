@@ -71,7 +71,7 @@ export default function BlackFridayPage() {
         </div>
         <p className="mt-5 text-center text-sm text-white/65">Clothing and shoes are flat-priced and do not receive the percentage discount. No stacking discounts.</p>
         <div id="giveaway" className="mt-10 grid items-center gap-5 overflow-hidden rounded-[1.5rem] border-2 border-[#35f1e0] bg-[#1b0c21] p-5 shadow-[0_0_35px_rgba(45,212,191,.12)] sm:p-7 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] md:text-left">
-          <div className="mx-auto flex aspect-square w-full max-w-[220px] items-center justify-center rounded-3xl border-2 border-pink-500 bg-gradient-to-br from-[#3a142c] to-[#12332e] text-7xl" aria-hidden="true">🎄</div>
+          <div className="mx-auto flex aspect-square w-full max-w-[280px] items-center justify-center rounded-3xl border-2 border-pink-500 bg-gradient-to-br from-[#3a142c] to-[#12332e] p-3"><img src="/images/grinch-dumpling.png" alt="Grinch dumpling giveaway toy" className="h-full w-full object-contain" /></div>
           <div className="text-center md:text-left">
             <p className="inline-block rounded-full bg-yellow-300 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-black">🎁 Free daily giveaway</p>
             <h3 className="mt-4 text-3xl font-black uppercase leading-tight text-white sm:text-4xl">FREE <span className="text-[#35f1e0]">GRINCH DUMPLING!</span></h3>
