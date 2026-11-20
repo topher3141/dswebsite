@@ -33,8 +33,8 @@ function Countdown({ now }: { now: number | null }) {
 
 const days = [
   { day: "THURSDAY", date: "NOV 26", hours: "9–11 PM", name: "Thanksgiving Night Kickoff", detail: "Get first access to the mega clearance weekend.", accent: "bg-pink-600" },
-  { day: "FRIDAY", date: "NOV 27", hours: "1–7 PM", name: "Black Friday Mega Clearance", detail: "50% off almost everything PLUS 25% off blue-tag items, $3 clothing and $5 shoes.", accent: "bg-teal-600" },
-  { day: "SATURDAY", date: "NOV 28", hours: "11 AM–3 PM", name: "Surprise Clearance Finale", detail: "The 50% off and 25% off blue-tag deals continue, plus a surprise announced Friday at 8 PM!", accent: "bg-amber-500" },
+  { day: "FRIDAY", date: "NOV 27", hours: "1–7 PM", name: "Black Friday Mega Clearance", detail: "The sale continues! Get here early — at these prices, the best finds won’t last.", accent: "bg-teal-600" },
+  { day: "SATURDAY", date: "NOV 28", hours: "11 AM–3 PM", name: "Surprise Clearance Finale", detail: "The sale continues, plus one more surprise! Details announced Friday at 8 PM.", accent: "bg-amber-500" },
 ];
 
 export default function BlackFridayPage() {
@@ -83,14 +83,14 @@ export default function BlackFridayPage() {
       <section className="border-y border-white/10 bg-[#121219] py-20"><div className="mx-auto max-w-6xl px-5"><p className="text-center text-xs font-black uppercase tracking-[.2em] text-[#35f1e0]">Mark your calendar</p><h2 className="mt-3 text-center text-3xl font-black leading-tight md:text-5xl">THREE DAYS. ZERO EXCUSES.</h2><div className="mt-9 grid gap-5 md:grid-cols-3">{days.map(d => <div key={d.day} className="overflow-hidden rounded-[1.5rem] border border-white/15 bg-[#1d1d27] shadow-xl"><div className={d.accent+" px-6 py-4 text-white"}><p className="text-sm font-black tracking-widest">{d.day} • {d.date}</p></div><div className="p-6"><p className="text-4xl font-black">{d.hours}</p><h3 className="mt-3 text-xl font-black">{d.name}</h3><p className="mt-3 text-white/70">{d.detail}</p></div></div>)}</div></div></section>
       <section className="bg-gradient-to-b from-[#260b24] via-[#0b0b12] to-[#071c1b] px-5 py-20 text-center text-white">
         <div className="mx-auto max-w-3xl">
-          <span className="rounded-full bg-pink-600 px-5 py-2 text-xs font-black uppercase tracking-widest">"Something bigger is coming"</span>
+          <span className="inline-block rounded-full bg-pink-600 px-5 py-2 text-xs font-black uppercase tracking-widest">One more reason to shop</span>
           <div className="mt-7 text-5xl">⚡</div>
-          <h2 className="mt-5 text-4xl font-black leading-tight md:text-6xl">"SATURDAY SURPRISE!"</h2>
-          <p className="mt-5 text-lg text-slate-200">"We’re saving an extra-big clearance surprise for Saturday. The 50% off sale and 25% off blue-tag items continue!"</p>
+          <h2 className="mt-5 text-4xl font-black leading-tight md:text-6xl">SATURDAY SURPRISE!</h2>
+          <p className="mt-5 text-lg leading-relaxed text-slate-200">All our Black Friday deals continue Saturday — and we have one more surprise up our sleeve. Shop early for the best selection!</p>
           <div className="mt-8 rounded-[2rem] border-2 border-teal-400 bg-[#11131b] p-7 text-white">
-            <p className="text-sm font-black uppercase tracking-widest text-pink-400">"Big reveal"</p>
-            <p className="mt-3 text-2xl font-black leading-tight sm:text-3xl">"FRIDAY AT 8 PM"</p>
-            <p className="mt-2 text-white/65">"Watch for our announcement of Saturday’s additional surprise savings."</p>
+            <p className="text-sm font-black uppercase tracking-widest text-pink-400">Surprise announcement</p>
+            <p className="mt-3 text-2xl font-black leading-tight sm:text-3xl">FRIDAY AT 8 PM</p>
+            <p className="mt-2 text-white/65">Check back Friday evening for the details of our Saturday-only surprise.</p>
           </div>
         </div>
       </section>
